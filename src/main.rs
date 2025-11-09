@@ -1,51 +1,64 @@
 use bevy::prelude::*;
 
+#[derive(Component)]
+struct Tank;
+
+
+
+
 fn main() {
     App::new()
-            .add_plugins(DefaultPlugins)
-            .add_plugins(HelloPlugin)
-            .run();
+        .add_plugins(DefaultPlugins)
+        .add_systems(Startup, setup)
+        .add_systems(Update, move_tank)
+        .run();
 }
 
-fn helloworld() {
-    println!("hello world!!");
+fn setup(mut commands: Commands) {    //Commands 用于创建或修改实体,Commands 是一个”命令缓冲区“ ，可以安全的修改游戏世界
+    commands.spawn(Camera2d);  //创建2D相机实体，没有相机看不到东西
+                                       //spawn() 方法用来创建一个实体，并向实体中添加组件
+
+    commands.spawn((    //创建一个实体，这里添加了三个组件
+        Sprite {             //渲染组件，外观
+            color: Color::srgb(1.0, 0.0, 0.0), //颜色
+            custom_size: Some(Vec2::new(50.0, 30.0)),    //宽50，高30 像素
+            ..default() //其他属性默认
+        },
+        Transform::from_xyz(0.0, 0.0, 0.0), //变形组件
+        Tank,
+    ));
 }
 
-#[derive(Component)]
-struct Persion;
 
-
-#[derive(Component)]
-struct Name(String);
-
-
-fn add_people(mut commands : Commands) {
-    commands.spawn((Persion, Name("张三".to_string())));
-    commands.spawn((Persion, Name("李四".to_string())));
-    commands.spawn((Persion, Name("王麻子".to_string())));
-}
-
-fn greet_people(time : Res<Time>, mut timer : ResMut<GreetTimer>, query: Query<&Name , With<Persion> > ) {
+// 这里 Query 用来查找需要的组件，bevy会自动根据添加查找并填充好；
+// Query 参数1，需要 Transform组件， 参数2： With增加过滤，在Transform组件基础上，同时有Tank组件的实体
+fn move_tank(keyboard_input : Res< ButtonInput<KeyCode> >, mut query : Query< &mut Transform, With<Tank> >  ) {
     
-    if timer.0.tick(time.delta()).just_finished() {
-        for name in &query {
-            println!("hello {}!",name.0);
+    if let Ok(mut transform) = query.single_mut() { //这里single_mut 方法确保只有一个实体，如果有多个或没有实体，则会进入else
+        
+        let mut direction  = Vec3::ZERO;
+        let speed = 5.0;
+        if keyboard_input.pressed(KeyCode::KeyW) {
+            direction.y += speed;
+        }
+
+        if keyboard_input.pressed(KeyCode::KeyS) {
+            direction.y -= speed;
+        }
+
+        if keyboard_input.pressed(KeyCode::KeyA) {
+            direction.x -= speed;
+        }
+
+        if keyboard_input.pressed(KeyCode::KeyD) {
+            direction.x += speed;
+        }
+
+        if direction != Vec3::ZERO {
+            direction = direction.normalize(); //标准化，确保同时两个方向时，速度还是speed；
+            transform.translation += direction;
         }
     }
-
 }
 
 
-pub struct HelloPlugin ;
-
-
-impl Plugin for HelloPlugin {
-    fn build(&self, app : &mut App) {
-        app.insert_resource(GreetTimer(Timer::from_seconds(2.0, TimerMode::Repeating)));
-        app.add_systems(Startup, add_people);
-        app.add_systems(Update,  greet_people );
-    }
-}
-
-#[derive(Resource)]
-struct GreetTimer(Timer);
