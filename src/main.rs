@@ -3,14 +3,22 @@ use bevy::prelude::*;
 #[derive(Component)]
 struct Tank;
 
+#[derive(Component)]
+struct Enemy {
+    speed : f32,
+}
 
+#[derive(Component)]
+struct Health {
+    value : f32,
+}
 
 
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
         .add_systems(Startup, setup)
-        .add_systems(Update, move_tank)
+        .add_systems(Update, (move_tank, move_enemies, check_collisions) )
         .run();
 }
 
@@ -26,7 +34,26 @@ fn setup(mut commands: Commands) {    //Commands 用于创建或修改实体,Com
         },
         Transform::from_xyz(0.0, 0.0, 0.0), //变形组件
         Tank,
+        Health { value : 100. },
     ));
+
+    for i in 0..3 {
+        commands.spawn(
+        (
+            Sprite {
+                color:Color::srgb(0.0, 0.0, 1.0),
+                custom_size : Some(Vec2::new(30.0, 20.0)),
+                ..default()
+            },
+            Enemy { speed: 2.0 },
+            Health { value: 30.0},
+
+            Transform::from_xyz((i as f32 * 100.0) - 100.0, 100.0, 0.0),
+        )
+        );
+    }
+
+
 }
 
 
@@ -62,3 +89,28 @@ fn move_tank(keyboard_input : Res< ButtonInput<KeyCode> >, mut query : Query< &m
 }
 
 
+fn move_enemies(mut query : Query<&mut Transform , With<Enemy> > ) {
+    for mut transform in &mut query {
+        transform.translation.x += 0.5;
+        if transform.translation.x > 400.0 || transform.translation.x < -400.0 {
+            transform.translation.x = transform.translation.x.clamp(-400.0, 400.0);
+            transform.translation.x -= 20.0;
+        }
+    }
+}
+
+
+fn check_collisions(tank_query : Query<&Transform, With<Tank>>,
+                    enemy_query : Query<(&Transform,Entity), (With<Enemy>,Without<Tank>)> , mut commands : Commands ) {  //Entity 这里获取实体
+
+    if let Ok(tank_transform) = tank_query.single() {
+        for (enemy_transform, enemy_entry) in &enemy_query {
+            let distance = tank_transform.translation.distance(enemy_transform.translation);
+            if distance < 50.0 {
+                println!("战车与敌人发生碰撞!");
+
+                commands.entity(enemy_entry).despawn();
+            }
+        }
+    }
+}
