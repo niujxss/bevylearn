@@ -20,11 +20,23 @@ struct CollisionDamage {
 }
 
 
+#[derive(Component)]
+struct CollisionEffect {
+    timer : Timer,
+}
+
+impl CollisionEffect {
+    fn new() -> Self {
+        CollisionEffect { timer: Timer::from_seconds(0.2, TimerMode::Once) }
+    }
+}
+
+
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
         .add_systems(Startup, setup)
-        .add_systems(Update, (move_tank, move_enemies, check_collisions) )
+        .add_systems(Update, (move_tank, move_enemies, check_collisions, check_health, collision_effect_system) )
         .run();
 }
 
@@ -98,12 +110,12 @@ fn move_tank(keyboard_input : Res< ButtonInput<KeyCode> >, mut query : Query< &m
 }
 
 //敌人移动
-fn move_enemies( query_tank : Query<&Transform,With<Tank>> , mut query_enemy : Query<(&mut Transform ,&Enemy), With<Enemy> > , time : Res<Time> ) {
+fn move_enemies( query_tank : Query<&Transform,(With<Tank> ,Without<Enemy> )> , mut query_enemy : Query<(&mut Transform ,&Enemy), With<Enemy> > , time : Res<Time> ) {
     if let Ok(tank_transform) = query_tank.single() {
         for (mut enemy_transform,enemy) in query_enemy.iter_mut() {
-            let direction = (tank_transform.translation - enemy_transform.translation).normalize_or_zero();
+            let direction = (tank_transform.translation - enemy_transform.translation).normalize_or_zero(); //这里进行向量标准化，相当于只获取一个方向向量
 
-            enemy_transform.translation += direction * enemy.speed * time.delta_secs();
+            enemy_transform.translation += direction * enemy.speed * time.delta_secs(); // 这里乘以时间参数，根据不同帧率来设置速度，确保不同帧率下速度一致
 
             
         }
@@ -111,18 +123,56 @@ fn move_enemies( query_tank : Query<&Transform,With<Tank>> , mut query_enemy : Q
 
 }
 
+//碰撞检测
+fn check_collisions(mut tank_query : Query<(&Transform , &CollisionDamage , &mut Health ) , With<Tank>>,
+                    mut enemy_query : Query<(&Transform , Entity , &CollisionDamage , &mut Health) , (With<Enemy> , Without<Tank>)> ,
+                    mut commands : Commands ) {  //Entity 这里获取实体
 
-fn check_collisions(tank_query : Query<&Transform, With<Tank>>,
-                    enemy_query : Query<(&Transform,Entity), (With<Enemy>,Without<Tank>)> , mut commands : Commands ) {  //Entity 这里获取实体
-
-    if let Ok(tank_transform) = tank_query.single() {
-        for (enemy_transform, enemy_entry) in &enemy_query {
+    if let Ok((tank_transform , tank_damage ,mut tank_health)) = tank_query.single_mut() {
+        
+        for (enemy_transform, enemy_entry,enemy_damage, mut enemy_health ) in enemy_query.iter_mut() {
             let distance = tank_transform.translation.distance(enemy_transform.translation);
-            if distance < 50.0 {
+            if distance < 45.0 {
                 println!("战车与敌人发生碰撞!");
 
-                commands.entity(enemy_entry).despawn();
+                tank_health.current -= enemy_damage.amount;
+                enemy_health.current -= tank_damage.amount;
+
+                println!("战车状态：{}/{}",tank_health.current,tank_health.max);
+                println!("怪物状态: {}/{}",enemy_health.current,enemy_health.max);
+
+                commands.entity(enemy_entry).insert(CollisionEffect::new());
+
+                
             }
+        }
+    }
+}
+
+//生命值检测
+fn check_health(query : Query<(Entity , &Health )> , mut commands : Commands ) {
+    for (entity,health) in query.iter() {
+        if health.current <= 0.0 {
+            println!("实体被摧毁!!");
+            commands.entity(entity).despawn();
+        }
+    }
+}
+
+
+//碰撞效果
+
+fn collision_effect_system(mut commands : Commands , 
+                           mut query : Query<(Entity, &mut CollisionEffect, &mut Sprite)> ,
+                           time : Res<Time> ) {
+    for (entity , mut effect, mut sprite) in query.iter_mut() {
+        effect.timer.tick(time.delta()); // 更新定时器数据
+
+        if effect.timer.is_finished() {
+            sprite.color = Color::srgb(0.0, 0.0, 1.0);
+            commands.entity(entity).remove::<CollisionEffect>();
+        } else {
+            sprite.color = Color::srgb(1.0, 1.0, 1.0);
         }
     }
 }
