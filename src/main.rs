@@ -10,7 +10,13 @@ struct Enemy {
 
 #[derive(Component)]
 struct Health {
-    value : f32,
+    current : f32,
+    max : f32,
+}
+
+#[derive(Component)]
+struct CollisionDamage {
+    amount : f32,
 }
 
 
@@ -34,8 +40,10 @@ fn setup(mut commands: Commands) {    //Commands 用于创建或修改实体,Com
         },
         Transform::from_xyz(0.0, 0.0, 0.0), //变形组件
         Tank,
-        Health { value : 100. },
-    ));
+        Health { current : 100. ,max : 100.0 },
+        CollisionDamage { amount : 25.0 },
+        )
+    );
 
     for i in 0..3 {
         commands.spawn(
@@ -46,7 +54,8 @@ fn setup(mut commands: Commands) {    //Commands 用于创建或修改实体,Com
                 ..default()
             },
             Enemy { speed: 2.0 },
-            Health { value: 30.0},
+            Health { current : 100. ,max : 100.0 },
+            CollisionDamage { amount:10.0 },
 
             Transform::from_xyz((i as f32 * 100.0) - 100.0, 100.0, 0.0),
         )
@@ -88,15 +97,18 @@ fn move_tank(keyboard_input : Res< ButtonInput<KeyCode> >, mut query : Query< &m
     }
 }
 
+//敌人移动
+fn move_enemies( query_tank : Query<&Transform,With<Tank>> , mut query_enemy : Query<(&mut Transform ,&Enemy), With<Enemy> > , time : Res<Time> ) {
+    if let Ok(tank_transform) = query_tank.single() {
+        for (mut enemy_transform,enemy) in query_enemy.iter_mut() {
+            let direction = (tank_transform.translation - enemy_transform.translation).normalize_or_zero();
 
-fn move_enemies(mut query : Query<&mut Transform , With<Enemy> > ) {
-    for mut transform in &mut query {
-        transform.translation.x += 0.5;
-        if transform.translation.x > 400.0 || transform.translation.x < -400.0 {
-            transform.translation.x = transform.translation.x.clamp(-400.0, 400.0);
-            transform.translation.x -= 20.0;
+            enemy_transform.translation += direction * enemy.speed * time.delta_secs();
+
+            
         }
     }
+
 }
 
 
