@@ -25,6 +25,16 @@ struct CollisionEffect {
     timer : Timer,
 }
 
+#[derive(Component)]
+struct Bullet {
+    speed : f32,
+    damage : f32,
+    direction : Vec3,
+}
+
+#[derive(Component)]
+struct PlayerBullet;
+
 impl CollisionEffect {
     fn new() -> Self {
         CollisionEffect { timer: Timer::from_seconds(0.2, TimerMode::Once) }
@@ -36,7 +46,19 @@ fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
         .add_systems(Startup, setup)
-        .add_systems(Update, (move_tank, move_enemies, check_collisions, check_health, collision_effect_system) )
+        .add_systems(Update, (
+            move_tank,
+            move_enemies,
+            check_collisions,
+            check_health,
+            collision_effect_system,
+            shoot_bullet,
+            move_bullets,
+            bullets_out_of_screen,
+            hit_effect_system,
+            bullet_hit_enemy,
+
+        ) )
         .run();
 }
 
@@ -65,7 +87,7 @@ fn setup(mut commands: Commands) {    //Commands 用于创建或修改实体,Com
                 custom_size : Some(Vec2::new(30.0, 20.0)),
                 ..default()
             },
-            Enemy { speed: 2.0 },
+            Enemy { speed: 20.0 },
             Health { current : 100. ,max : 100.0 },
             CollisionDamage { amount:10.0 },
 
@@ -173,6 +195,110 @@ fn collision_effect_system(mut commands : Commands ,
             commands.entity(entity).remove::<CollisionEffect>();
         } else {
             sprite.color = Color::srgb(1.0, 1.0, 1.0);
+        }
+    }
+}
+
+//生成子弹
+fn shoot_bullet(
+    keyboard_input : Res< ButtonInput<KeyCode> >,
+    tank_query : Query<&Transform , With<Tank>>,
+    mut commands : Commands
+) {
+    if keyboard_input.just_pressed(KeyCode::Space) {
+        if let Ok(tank_transform) = tank_query.single() {
+            commands.spawn((Sprite{
+                color : Color::srgb(1.0, 1.0, 0.0),
+                custom_size : Some(Vec2::new(5.0, 10.0)),
+                ..default()
+            },
+            Transform::from_translation(tank_transform.translation + Vec3::Y * 20.0 ),
+            Bullet {
+                speed : 300.0,
+                damage : 15.0 ,
+                direction : Vec3::Y,
+            },
+            PlayerBullet,
+        ));
+        }
+    }
+}
+
+// 子弹移动
+fn move_bullets(
+    mut query : Query<(&mut Transform, &Bullet)> ,
+    time : Res<Time>,
+) {
+    for (mut transform,bullet) in query.iter_mut() {
+        transform.translation += bullet.direction * bullet.speed * time.delta_secs();
+    }
+}
+
+//子弹超出屏幕消失
+fn bullets_out_of_screen(
+    mut commands : Commands,
+    query : Query<(Entity,&Transform) , With<Bullet> >
+) {
+    let screen_margin = 500.0;
+    for (entity , transform) in query.iter() {
+        if transform.translation.x > screen_margin ||
+           transform.translation.x < -screen_margin ||
+           transform.translation.y > screen_margin ||
+           transform.translation.y < -screen_margin {
+            commands.entity(entity).despawn();
+           }
+    }
+}
+
+//子弹与敌人碰撞
+fn bullet_hit_enemy(
+    mut commands : Commands,
+    bullet_query : Query<(Entity , &Transform , &Bullet),With<PlayerBullet> >,
+    mut enemy_query : Query<(&Transform , Entity , &mut Health) , (With<Enemy> , Without<PlayerBullet>) > 
+) {
+    for (bullet_entity,buttlen_transform,bullet) in bullet_query.iter() {
+
+        for (enemy_transform , enemy_entity , mut health) in enemy_query.iter_mut() {
+            let distance = buttlen_transform.translation.distance(enemy_transform.translation);
+
+            if distance < 25.0 {
+                health.current -= bullet.damage;
+                println!("子弹击中敌人！ 敌人生命值{}/{}",health.current,health.max);
+
+                commands.entity(bullet_entity).despawn();
+
+                commands.entity(enemy_entity).insert(HitEffect::new());
+            }
+        }
+    }
+}
+
+// 击中效果组件
+#[derive(Component)]
+struct HitEffect {
+    timer: Timer,
+}
+
+impl HitEffect {
+    fn new() -> Self {
+        HitEffect { timer: Timer::from_seconds(0.1, TimerMode::Once) }
+    }
+}
+
+
+fn hit_effect_system(
+    mut commands : Commands,
+    mut query : Query<(Entity,&mut HitEffect, &mut Sprite)>,
+    time : Res<Time>
+) {
+    for (entity , mut effect , mut sprite) in query.iter_mut() {
+        effect.timer.tick(time.delta());
+
+        if effect.timer.just_finished() {
+            sprite.color = Color::srgb(0.0 , 0.0 , 1.0);
+            commands.entity(entity).remove::<HitEffect>();
+        } else {
+            sprite.color = Color::srgb(1.0, 1.0, 0.0);
         }
     }
 }
