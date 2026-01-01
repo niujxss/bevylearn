@@ -1,5 +1,6 @@
 use bevy::prelude::*;
 use crate::components::*;
+use bevy::text::TextStyle;
 
 
 
@@ -198,6 +199,9 @@ pub fn move_tank(keyboard_input : Res< ButtonInput<KeyCode> >, mut query : Query
     }
 }
 
+
+
+//启动时的接口，用来创建各个实体entity
 pub fn setup(mut commands: Commands) {    //Commands 用于创建或修改实体,Commands 是一个”命令缓冲区“ ，可以安全的修改游戏世界
     commands.spawn(Camera2d);  //创建2D相机实体，没有相机看不到东西
                                        //spawn() 方法用来创建一个实体，并向实体中添加组件
@@ -233,4 +237,71 @@ pub fn setup(mut commands: Commands) {    //Commands 用于创建或修改实体
     }
 
 
+}
+
+pub fn setup_ui(mut commands: Commands) {
+    commands.spawn(
+        (
+        // 主HUD容器
+        Node {   //Node 组件定义了UI元素的 布局属性
+            width: Val::Percent(100.0), //宽度设置为屏幕的100%
+            height: Val::Percent(15.0), //高度设置为屏幕的15 %
+            position_type: PositionType::Absolute, //使用绝对定位  （相对于创建定位上下文进行定位）
+                                        //（一般需要先有个创建定位上下文，然后子节点可以据此进行定位，如果没有，则依靠窗口）
+            bottom: Val::Px(0.0), //距离屏幕底端几个像素
+            justify_content: JustifyContent::SpaceBetween,  //子元素在主轴上均匀分布，首位贴边（左右分布）
+            align_items: AlignItems::Center, // 子元素垂直居中
+            padding: UiRect::all(Val::Px(10.0)), //四周10像素内边距
+            ..default()
+        },
+        BackgroundColor(Color::srgba(0.1, 0.1, 0.1, 0.7)), ////RGB加透明度
+        PlayerHUD,
+    )
+    ).with_children(|parent| {  //添加子实体
+        // 左侧区域
+        parent.spawn(
+    (
+                Node {
+                    flex_direction: FlexDirection::Column, //子元素垂直排列
+                    align_items: AlignItems::FlexStart, //子元素靠左对齐
+                    ..default()
+                },
+            )
+        ).with_children(|parent| {
+            parent.spawn((
+                TextBundle::from_section(
+                    "战车耐久度: 100/100",
+                    TextStyle {
+                        font_size: 20.0,
+                        color: Color::WHITE,
+                        ..default()
+                    },
+                ),
+                HealthText,
+            ));
+        }
+        );
+
+        // 右侧区域
+        parent.spawn((
+                Node {
+                    flex_direction: FlexDirection::Column,
+                    align_items: AlignItems::FlexEnd,
+                    ..default()
+                },
+            )
+        ).with_children(|parent| {
+            parent.spawn((
+                TextBundle::from_section(
+                    "金钱: 0G",
+                    TextStyle {
+                        font_size: 18.0,
+                        color: Color::srgb(1.0, 1.0, 0.0), // 黄色
+                        ..default()
+                    },
+                ),
+                MoneyText,
+            ));
+        });
+    });
 }

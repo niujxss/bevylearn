@@ -25,6 +25,13 @@ pub struct CollisionEffect {
     pub timer : Timer,
 }
 
+impl CollisionEffect {
+    pub fn new() -> Self {
+        CollisionEffect { timer: Timer::from_seconds(0.2, TimerMode::Once) }
+    }
+}
+
+
 #[derive(Component)]
 pub struct Bullet {
     pub speed : f32,
@@ -41,16 +48,20 @@ pub struct HitEffect {
     pub timer: Timer,
 }
 
-impl CollisionEffect {
-    pub fn new() -> Self {
-        CollisionEffect { timer: Timer::from_seconds(0.2, TimerMode::Once) }
-    }
-}
-
-
-
 impl HitEffect {
     pub fn new() -> Self {
         HitEffect { timer: Timer::from_seconds(0.1, TimerMode::Once) }
     }
 }
+
+
+#[derive(Component)]
+pub struct HealthText; //生命值文本
+
+
+#[derive(Component)]
+pub struct MoneyText; //金币文本
+
+
+#[derive(Component)]
+pub struct PlayerHUD; //HUD 标记
