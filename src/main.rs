@@ -12,7 +12,7 @@ use systems::*;
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
-        .add_systems(Startup, setup)
+        .add_systems(Startup, (setup,setup_ui))
         .add_systems(Update, (
             move_tank,
             move_enemies,
@@ -24,6 +24,8 @@ fn main() {
             bullets_out_of_screen,
             hit_effect_system,
             bullet_hit_enemy,
+            update_ui_test,
+        
 
         ) )
         .run();

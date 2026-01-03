@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 use crate::components::*;
-use bevy::text::TextStyle;
+
 
 
 
@@ -239,69 +239,82 @@ pub fn setup(mut commands: Commands) {    //Commands 用于创建或修改实体
 
 }
 
-pub fn setup_ui(mut commands: Commands) {
+
+
+//mut commands: Commands- 可变的 Commands 资源，用于创建、删除实体
+//asset_server: Res<AssetServer>- 资源服务器，用于加载字体、图片等资源
+
+pub fn setup_ui(mut commands: Commands,asset_server: Res<AssetServer>) {  
+
+    let chinese_font = asset_server.load("fonts/STKAITI.TTF");
     commands.spawn(
         (
         // 主HUD容器
-        Node {   //Node 组件定义了UI元素的 布局属性
-            width: Val::Percent(100.0), //宽度设置为屏幕的100%
-            height: Val::Percent(15.0), //高度设置为屏幕的15 %
-            position_type: PositionType::Absolute, //使用绝对定位  （相对于创建定位上下文进行定位）
-                                        //（一般需要先有个创建定位上下文，然后子节点可以据此进行定位，如果没有，则依靠窗口）
-            bottom: Val::Px(0.0), //距离屏幕底端几个像素
-            justify_content: JustifyContent::SpaceBetween,  //子元素在主轴上均匀分布，首位贴边（左右分布）
-            align_items: AlignItems::Center, // 子元素垂直居中
-            padding: UiRect::all(Val::Px(10.0)), //四周10像素内边距
+        Node {
+            width: Val::Percent(100.0), // 宽度为屏幕宽度的 100%
+            height: Val::Percent(15.0), // 高度为屏幕高度的 15%
+            position_type: PositionType::Absolute, // 绝对定位
+            bottom: Val::Px(0.0), // 距离屏幕底部 0 像素
+            justify_content: JustifyContent::SpaceBetween, // 子元素在主轴上两端对齐
+            align_items: AlignItems::Center, // 子元素在交叉轴上居中对齐
+            padding: UiRect::all(Val::Px(10.0)), // 内边距 10 像素
             ..default()
         },
-        BackgroundColor(Color::srgba(0.1, 0.1, 0.1, 0.7)), ////RGB加透明度
+        BackgroundColor(Color::srgba(0.1, 0.1, 0.1, 0.7)), //设置背景颜色为深灰色，70% 不透明度 
         PlayerHUD,
-    )
-    ).with_children(|parent| {  //添加子实体
+        ) 
+    ).with_children(|parent| { // parent参数用于创建子实体
         // 左侧区域
-        parent.spawn(
-    (
-                Node {
-                    flex_direction: FlexDirection::Column, //子元素垂直排列
-                    align_items: AlignItems::FlexStart, //子元素靠左对齐
+        parent.spawn((
+            Node {
+                flex_direction: FlexDirection::Column,   // 子元素垂直排列
+                align_items: AlignItems::FlexStart,   // 子元素靠左对齐
+                ..default()
+            },
+        )).with_children(|parent| {
+            parent.spawn((
+                Text::new("战车耐久度: 100/100"),
+                TextFont {
+                    font: chinese_font.clone(),
+                    font_size: 20.0,
                     ..default()
                 },
-            )
-        ).with_children(|parent| {
-            parent.spawn((
-                TextBundle::from_section(
-                    "战车耐久度: 100/100",
-                    TextStyle {
-                        font_size: 20.0,
-                        color: Color::WHITE,
-                        ..default()
-                    },
-                ),
+                TextColor(Color::WHITE),
                 HealthText,
             ));
-        }
-        );
+        });
 
         // 右侧区域
         parent.spawn((
-                Node {
-                    flex_direction: FlexDirection::Column,
-                    align_items: AlignItems::FlexEnd,
+            Node {
+                flex_direction: FlexDirection::Column,   // 子元素垂直排列
+                align_items: AlignItems::FlexEnd,   // 子元素靠右对齐
+                ..default()
+            },
+        )).with_children(|parent| {
+            parent.spawn((
+                Text::new("金钱: 0G"),
+                TextFont {
+                    font: chinese_font.clone(), 
+                    font_size: 18.0,
                     ..default()
                 },
-            )
-        ).with_children(|parent| {
-            parent.spawn((
-                TextBundle::from_section(
-                    "金钱: 0G",
-                    TextStyle {
-                        font_size: 18.0,
-                        color: Color::srgb(1.0, 1.0, 0.0), // 黄色
-                        ..default()
-                    },
-                ),
+                TextColor(Color::srgb(1.0, 1.0, 0.0)), // 黄色
                 MoneyText,
             ));
         });
     });
+}
+
+
+
+pub fn update_ui_test(tank_query: Query<&Health,With<Tank>>, mut text_query: Query<&mut Text,With<HealthText>>) {
+    if let Ok(health) = tank_query.single() {
+
+
+        for mut span in &mut text_query {
+           **span = format!("战车耐久度: {:.0}/{:.0}", health.current, health.max);
+        }
+        
+    }
 }
