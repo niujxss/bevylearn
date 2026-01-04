@@ -4,6 +4,12 @@ use bevy::prelude::*;
 pub struct Tank;
 
 #[derive(Component)]
+pub struct Player;
+
+#[derive(Component)]
+pub struct Human;
+
+#[derive(Component)]
 pub struct Enemy {
     pub speed : f32,
 }

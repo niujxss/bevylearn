@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 use crate::components::*;
-
+use crate::GameState;
 
 
 
@@ -214,6 +214,7 @@ pub fn setup(mut commands: Commands) {    //Commands 用于创建或修改实体
         },
         Transform::from_xyz(0.0, 0.0, 0.0), //变形组件
         Tank,
+        Player,
         Health { current : 100. ,max : 100.0 },
         CollisionDamage { amount : 25.0 },
         )
@@ -316,5 +317,69 @@ pub fn update_ui_test(tank_query: Query<&Health,With<Tank>>, mut text_query: Que
            **span = format!("战车耐久度: {:.0}/{:.0}", health.current, health.max);
         }
         
+    }
+}
+
+
+
+pub fn interact_with_npc(
+    mut commands: Commands,
+    keyboard_input: Res<ButtonInput<KeyCode>>,
+    player_query: Query<&Transform, (With<Player>, With<Human>)>,
+    npc_query: Query<(&Transform, &NPC, &Name)>,
+    mut next_state: ResMut<NextState<GameState>>,
+) {
+    if keyboard_input.just_pressed(KeyCode::KeyE) {
+        if let Ok(player_transform) = player_query.single() {
+            for (npc_transform, npc, name) in &npc_query {
+                let distance = player_transform.translation.distance(npc_transform.translation);
+                
+                if distance < 50.0 {
+                    println!("与 {} 交互", name);
+                    println!("NPC ID: {}, 类型: {:?}", npc.id, npc.npc_type);
+                    
+                    next_state.set(GameState::Dialogue);
+                    
+                    commands.spawn(DialogueEvent {
+                        npc_id: npc.id.clone(),
+                        dialogue_id: npc.dialogue_id.clone(),
+                    });
+                    
+                    break;
+                }
+            }
+        }
+    }
+}
+
+pub fn interact_with_building(
+    keyboard_input: Res<ButtonInput<KeyCode>>,
+    player_query: Query<&Transform, (With<Player>, With<Human>)>,
+    building_query: Query<(&Transform, &Building, &Name)>,
+    mut next_state: ResMut<NextState<GameState>>,
+) {
+    if keyboard_input.just_pressed(KeyCode::KeyE) {
+        if let Ok(player_transform) = player_query.single() {
+            for (building_transform, building, name) in &building_query {
+                let distance = player_transform.translation.distance(building_transform.translation);
+                
+                if distance < 60.0 && building.interactable {
+                    println!("进入: {}", name);
+                    
+                    match building.buildingtype {
+                        BuildingType::Shop => {
+                            next_state.set(GameState::Shop);
+                        }
+                        BuildingType::Bar => {
+                            // 进入酒吧
+                            println!("进入酒吧场景");
+                        }
+                        _ => {}
+                    }
+                    
+                    break;
+                }
+            }
+        }
     }
 }
