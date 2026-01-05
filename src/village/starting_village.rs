@@ -5,12 +5,11 @@ use crate::village::*;
 // 创建起始村庄
 pub fn crate_starting_village(
     mut commands : Commands,
-    asset_server : Res<AssetServer>,
     mut village_manager : ResMut<VillageManager>,
 ) {
     // 创建村庄数据
     let village_id = "village_001".to_string();
-    let village_Data = VillageData {
+    let village_data = VillageData {
         id : village_id.clone(),
         name : "希望村".to_string(),
         village_type : VillageType::Starting,
@@ -29,14 +28,15 @@ pub fn crate_starting_village(
     };
 
     // 添加到管理器
-    village_manager.villages.insert(village_id.clone() ,village_Data);
+    village_manager.villages.insert(village_id.clone() ,village_data);
     village_manager.current_village = Some(village_id.clone());
     village_manager.discovered_villages.push(village_id.clone());
 
     //创建村庄实体
     let village_entry = commands.spawn(
         (
-            Sprite::default(),
+            //Sprite::default(),
+            Transform::from_xyz(0.0, 0.0, 0.0),
             village {
                 id : village_id.clone(),
                 village_type : VillageType::Starting,
@@ -54,10 +54,10 @@ pub fn crate_starting_village(
                 custom_size: Some(Vec2::new(1000.0, 1000.0)),
                 ..default()
             },
-            Transform::from_xyz(0.0, 0.0, 0.0),
+            Transform::from_xyz(0.0, 0.0, 1.0),
             Name::new("村庄地面"),
         )
-    ).set_parent_in_place(village_entry);
+    );
 
     //建筑
     create_buildings(&mut commands, village_entry);
@@ -79,10 +79,11 @@ fn create_buildings(commands : &mut Commands, parent : Entity) {
 
                 Sprite {
                         color,
-                        custom_size: Some(Vec2::new(80.0, 100.0)),
+                        custom_size: Some(Vec2::new(100.0, 100.0)),
                         ..default()
                 },
-                Transform::from_xyz(x, y, 1.0),
+                
+                Transform::from_xyz(x, y, 2.0),
                 Building {
                     buildingtype : buildtype,
                     is_enterable : true,
@@ -90,7 +91,7 @@ fn create_buildings(commands : &mut Commands, parent : Entity) {
                 },
                 Name::new(name),
             )
-        ).set_parent_in_place(parent);
+        );
 
     }
 }
@@ -110,7 +111,7 @@ fn create_npc(commands : &mut Commands, parent : Entity) {
                 custom_size: Some(Vec2::new(20.0, 30.0)),
                 ..default()
             },
-            Transform::from_xyz(x, y, 2.0),
+            Transform::from_xyz(x, y, 3.0),
             NPC {
                 id: id.to_string(),
                 name: name.to_string(),
@@ -120,6 +121,7 @@ fn create_npc(commands : &mut Commands, parent : Entity) {
                 quest_id: quest_id.map(|q| q.to_string()),
             },
             Name::new(name),
-        )).set_parent_in_place(parent);
+            println!("set {} success",name),
+        ));
     }
 }

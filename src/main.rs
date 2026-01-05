@@ -27,7 +27,8 @@ fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
         .init_state::<GameState>()
-        .add_systems(Startup, (setup,setup_ui))
+        .init_resource::<VillageManager>()
+        .add_systems(Startup, setup)
         // .add_systems(Update, (
         //     move_tank,
         //     move_enemies,
@@ -47,6 +48,7 @@ fn main() {
             move_tank.run_if(in_state(GameState::Village)),
             interact_with_npc.run_if(in_state(GameState::Village)),
             interact_with_building.run_if(in_state(GameState::Village)),
+            move_tank,
         ))
         .run();
 }

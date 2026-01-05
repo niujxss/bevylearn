@@ -1,6 +1,8 @@
 use bevy::prelude::*;
 use crate::components::*;
 use crate::GameState;
+use crate::village::VillageManager;
+use crate::village::starting_village;
 
 
 
@@ -202,7 +204,7 @@ pub fn move_tank(keyboard_input : Res< ButtonInput<KeyCode> >, mut query : Query
 
 
 //启动时的接口，用来创建各个实体entity
-pub fn setup(mut commands: Commands) {    //Commands 用于创建或修改实体,Commands 是一个”命令缓冲区“ ，可以安全的修改游戏世界
+pub fn setup(mut commands: Commands, mut village_manager: ResMut<VillageManager>,mut next_state: ResMut<NextState<GameState>>) {    //Commands 用于创建或修改实体,Commands 是一个”命令缓冲区“ ，可以安全的修改游戏世界
     commands.spawn(Camera2d);  //创建2D相机实体，没有相机看不到东西
                                        //spawn() 方法用来创建一个实体，并向实体中添加组件
 
@@ -212,7 +214,7 @@ pub fn setup(mut commands: Commands) {    //Commands 用于创建或修改实体
             custom_size: Some(Vec2::new(50.0, 30.0)),    //宽50，高30 像素
             ..default() //其他属性默认
         },
-        Transform::from_xyz(0.0, 0.0, 0.0), //变形组件
+        Transform::from_xyz(100.0, 100.0, 5.0), //变形组件
         Tank,
         Player,
         Health { current : 100. ,max : 100.0 },
@@ -220,22 +222,27 @@ pub fn setup(mut commands: Commands) {    //Commands 用于创建或修改实体
         )
     );
 
-    for i in 0..3 {
-        commands.spawn(
-        (
-            Sprite {
-                color:Color::srgb(0.0, 0.0, 1.0),
-                custom_size : Some(Vec2::new(30.0, 20.0)),
-                ..default()
-            },
-            Enemy { speed: 20.0 },
-            Health { current : 100. ,max : 100.0 },
-            CollisionDamage { amount:10.0 },
+    starting_village::crate_starting_village(commands, village_manager);
+    next_state.set(GameState::Village);
 
-            Transform::from_xyz((i as f32 * 100.0) - 100.0, 100.0, 0.0),
-        )
-        );
-    }
+
+
+    // for i in 0..3 {
+    //     commands.spawn(
+    //     (
+    //         Sprite {
+    //             color:Color::srgb(0.0, 0.0, 1.0),
+    //             custom_size : Some(Vec2::new(30.0, 20.0)),
+    //             ..default()
+    //         },
+    //         Enemy { speed: 20.0 },
+    //         Health { current : 100. ,max : 100.0 },
+    //         CollisionDamage { amount:10.0 },
+
+    //         Transform::from_xyz((i as f32 * 100.0) - 100.0, 100.0, 0.0),
+    //     )
+    //     );
+    // }
 
 
 }
@@ -326,7 +333,7 @@ pub fn interact_with_npc(
     mut commands: Commands,
     keyboard_input: Res<ButtonInput<KeyCode>>,
     player_query: Query<&Transform, (With<Player>, With<Human>)>,
-    npc_query: Query<(&Transform, &NPC, &Name)>,
+    npc_query: Query<(&Transform, &NPC, &Name),With<NPC>>,
     mut next_state: ResMut<NextState<GameState>>,
 ) {
     if keyboard_input.just_pressed(KeyCode::KeyE) {
