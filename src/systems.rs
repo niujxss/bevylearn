@@ -217,6 +217,7 @@ pub fn setup(mut commands: Commands, mut village_manager: ResMut<VillageManager>
         Transform::from_xyz(100.0, 100.0, 5.0), //变形组件
         Tank,
         Player,
+        Human,
         Health { current : 100. ,max : 100.0 },
         CollisionDamage { amount : 25.0 },
         )
@@ -337,6 +338,7 @@ pub fn interact_with_npc(
     mut next_state: ResMut<NextState<GameState>>,
 ) {
     if keyboard_input.just_pressed(KeyCode::KeyE) {
+        println!("✅ E键被检测到！");
         if let Ok(player_transform) = player_query.single() {
             for (npc_transform, npc, name) in &npc_query {
                 let distance = player_transform.translation.distance(npc_transform.translation);
@@ -345,7 +347,7 @@ pub fn interact_with_npc(
                     println!("与 {} 交互", name);
                     println!("NPC ID: {}, 类型: {:?}", npc.id, npc.npc_type);
                     
-                    next_state.set(GameState::Dialogue);
+                   // next_state.set(GameState::Dialogue);
                     
                     commands.spawn(DialogueEvent {
                         npc_id: npc.id.clone(),
