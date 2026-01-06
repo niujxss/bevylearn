@@ -157,7 +157,7 @@ pub fn check_collisions(mut tank_query : Query<(&Transform , &CollisionDamage , 
 pub fn move_enemies( query_tank : Query<&Transform,(With<Tank> ,Without<Enemy> )> , mut query_enemy : Query<(&mut Transform ,&Enemy), With<Enemy> > , time : Res<Time> ) {
     if let Ok(tank_transform) = query_tank.single() {
         for (mut enemy_transform,enemy) in query_enemy.iter_mut() {
-            let direction = (tank_transform.translation - enemy_transform.translation).normalize_or_zero(); //这里进行向量标准化，相当于只获取一个方向向量
+            let direction = (tank_transform.translation - enemy_transform.translation).normalize_or_zero(); //这里进行向量标准化，相当于只获取一个 方向向量
 
             enemy_transform.translation += direction * enemy.speed * time.delta_secs(); // 这里乘以时间参数，根据不同帧率来设置速度，确保不同帧率下速度一致
 
@@ -206,33 +206,35 @@ pub fn setup(mut commands: Commands) {    //Commands 用于创建或修改实体
     commands.spawn(Camera2d);  //创建2D相机实体，没有相机看不到东西
                                        //spawn() 方法用来创建一个实体，并向实体中添加组件
 
-    commands.spawn((    //创建一个实体，这里添加了三个组件
-        Sprite {             //渲染组件，外观
-            color: Color::srgb(1.0, 0.0, 0.0), //颜色
-            custom_size: Some(Vec2::new(50.0, 30.0)),    //宽50，高30 像素
-            ..default() //其他属性默认
-        },
-        Transform::from_xyz(0.0, 0.0, 0.0), //变形组件
-        Tank,
-        Health { current : 100. ,max : 100.0 },
-        CollisionDamage { amount : 25.0 },
+    commands.spawn(
+(    //创建一个实体，这里添加了5个组件
+            Sprite {             //渲染组件，外观
+                color: Color::srgb(1.0, 0.0, 0.0), //颜色
+                custom_size: Some(Vec2::new(50.0, 30.0)),    //宽50，高30 像素
+                ..default() //其他属性默认
+            },
+            Transform::from_xyz(0.0, 0.0, 0.0), //变形组件
+            Tank, //自定义组件，tank标签
+            Health { current : 100. ,max : 100.0 }, // 自定义生命值组件
+            CollisionDamage { amount : 25.0 }, // 自定义攻击值组件
         )
     );
 
+    //如下创建了三个实体
     for i in 0..3 {
         commands.spawn(
-        (
-            Sprite {
-                color:Color::srgb(0.0, 0.0, 1.0),
-                custom_size : Some(Vec2::new(30.0, 20.0)),
-                ..default()
-            },
-            Enemy { speed: 20.0 },
-            Health { current : 100. ,max : 100.0 },
-            CollisionDamage { amount:10.0 },
+    (
+                Sprite {
+                    color:Color::srgb(0.0, 0.0, 1.0),
+                    custom_size : Some(Vec2::new(30.0, 20.0)),
+                    ..default()
+                },
+                Enemy { speed: 20.0 },
+                Health { current : 100. ,max : 100.0 },
+                CollisionDamage { amount:10.0 },
 
-            Transform::from_xyz((i as f32 * 100.0) - 100.0, 100.0, 0.0),
-        )
+                Transform::from_xyz((i as f32 * 100.0) - 100.0, 100.0, 0.0),
+            )
         );
     }
 
