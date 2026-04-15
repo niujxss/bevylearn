@@ -1,0 +1,19 @@
+[package]
+name = "hello_world"
+version = "0.1.0"
+edition = "2024"
+
+
+
+
+# 调试模式（开发时用）：开少量优化，不影响编译速度
+[profile.dev]
+opt-level = 1
+ 
+# 调试模式下，给依赖项开满优化（依赖项不常改，优化了不影响开发）
+[profile.dev.package."*"]
+opt-level = 3
+
+[dependencies]
+bevy = { version = "0.17", features = ["dynamic_linking"] }
+chrono = "0.4"
