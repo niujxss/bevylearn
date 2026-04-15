@@ -9,11 +9,19 @@ edition = "2024"
 # 调试模式（开发时用）：开少量优化，不影响编译速度
 [profile.dev]
 opt-level = 1
+debug = true
+debug-assertions = true
+incremental = true
  
 # 调试模式下，给依赖项开满优化（依赖项不常改，优化了不影响开发）
 [profile.dev.package."*"]
 opt-level = 3
 
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+
 [dependencies]
-bevy = { version = "0.17", features = ["dynamic_linking"] }
+bevy = { version = "0.17", features = ["dynamic_linking", "jpeg"] }
 chrono = "0.4"
