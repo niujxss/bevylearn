@@ -40,12 +40,12 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
         },
         TextShadow::default(),
         // Set the justification of the Text
-        TextLayout::new_with_justify(Justify::Center),
+        TextLayout::new_with_justify(Justify::Center),  // 多行文本居中对齐
         // Set the style of the Node itself.
         Node {
-            position_type: PositionType::Absolute,
-            bottom: px(5),
-            right: px(5),
+            position_type: PositionType::Absolute, // 绝对位置
+            bottom: px(5), //距离屏幕底部 5像素
+            right: px(5), // 距离屏幕右侧 5像素
             ..default()
         },
         AnimatedText,
@@ -55,7 +55,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands
         .spawn((
             // Create a Text with multiple child spans.
-            Text::new("FPS: "),
+            Text::new("FPS: "),  //父实体
             TextFont {
                 // This font is loaded and will be used instead of the default font.
                 font: asset_server.load("fonts/STKAITI.ttf"),
@@ -64,7 +64,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
             },
         ))
         .with_child((
-            TextSpan::default(),
+            TextSpan::default(), // 子实体
             if cfg!(feature = "default_font") {
                 (
                     TextFont {
