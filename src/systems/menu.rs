@@ -98,7 +98,7 @@ pub fn start_button_systems(
                 if let Ok(menu_en) = menu_entity.single() {
                     commands.entity(menu_en).despawn_children();
                     commands.entity(menu_en).despawn();
-                    next_status.set(Appstatus::Vollage);
+                    next_status.set(Appstatus::Game);
                     
                 }
             }
@@ -136,4 +136,18 @@ pub fn stop_button_systems(
             }
         }
     }
+}
+
+pub fn start_game(mut commands: Commands, mut next_status: ResMut<NextState<Appstatus>>) {
+    commands.spawn((
+        Player {
+            health: 0,
+            max_health: 0,
+            main_gun: MainGun::LEVEL1("碎铁者Ⅰ型".to_string(), "用废旧钢管焊接而成，发射生锈的穿甲弹".to_string(), 0.1, 5),
+            second_gun: SecondGun::LEVEL1("啄木鸟机枪".to_string(), "7.62mm同轴机枪，射速每分钟800发，用来驱赶靠近的拾荒者".to_string(), 0.01, 1),
+            engine: Engine::LEVEL1("老烟枪".to_string(), "二手柴油机，启动时会冒出浓浓的黑烟，最高时速只有30公里，但胜在能烧各种劣质燃油".to_string(), 0.5),
+        } 
+    ));
+
+    next_status.set(Appstatus::Vollage);
 }

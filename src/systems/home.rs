@@ -15,6 +15,9 @@ struct ChuJiButton;
 struct UpdateButton;
 
 #[derive(Component)]
+pub struct RecoveryButton;
+
+#[derive(Component)]
 pub struct ZhuangBeiButton;
 
 #[derive(Component)]
@@ -23,19 +26,22 @@ struct BeiBaoButton;
 #[derive(Component)]
 pub struct VollageMessage;
 
-pub fn create_home_ui(mut commands: Commands,asset: Res<AssetServer>) {
+
+fn update_player_maxhealth(player: &mut Player) {
+    let zhongliang = player.engine.get_zhongliang() - player.main_gun.get_zhongliang() - player.second_gun.get_zhongliang();
+    let health = (zhongliang * 100.0) as i32;
+    player.max_health = health; 
+}
+
+pub fn create_home_ui(mut commands: Commands, asset: Res<AssetServer>, mut player: Query<&mut Player>) {
 
     let image: Handle<Image> = asset.load("vollage.png");
     let tank_image = asset.load("tank.png");
-    commands.spawn((
-       Player {
-        health: 39,
-        max_health: 39,
-        main_gun: MainGun::LEVEL1("碎铁者Ⅰ型".to_string(), "用废旧钢管焊接而成，发射生锈的穿甲弹".to_string(), 0.1, 5),
-        second_gun: SecondGun::LEVEL1("啄木鸟机枪".to_string(), "7.62mm同轴机枪，射速每分钟800发，用来驱赶靠近的拾荒者".to_string(), 0.01, 1),
-        engine: Engine::LEVEL1("老烟枪".to_string(), "二手柴油机，启动时会冒出浓浓的黑烟，最高时速只有30公里，但胜在能烧各种劣质燃油".to_string(), 0.5),
-       } 
-    ));
+
+    if let Ok(mut player) = player.single_mut() {
+        update_player_maxhealth(&mut player);
+    }
+    
     commands.spawn((
         VollageUi,
         Node {
@@ -117,7 +123,37 @@ pub fn create_home_ui(mut commands: Commands,asset: Res<AssetServer>) {
                         TextColor(Color::srgb(0.9, 0.9, 0.9)), //文本颜色
                     )
                 ]
-            )
+            ),
+            (
+                // 补充
+                UpdateButton,
+                Button,
+                Node {
+                    width: px(150), // 宽 150像素
+                    height: px(65), // 高65像素
+                    border: UiRect::all(px(5)),  // UiRect 是四个边的矩形，all 是这是四周宽度都是5个像素；
+                                                 // border 定义边框宽度
+                    justify_content: JustifyContent::Center,
+                    align_items: AlignItems::Center,
+                    ..default()
+                },
+                StopGameUi,
+                RecoveryButton,
+                BorderColor::all(Color::WHITE), //边框颜色,白色
+                BorderRadius::all(px(8.0)), // 8像素的圆角半径，更现代
+                BackgroundColor(Color::BLACK),
+                children![
+                    (
+                        Text::new("充能"),
+                        TextFont {
+                            font: asset.load("fonts/STKAITI.TTF"),
+                            font_size: 33.0,
+                            ..default()
+                        },
+                        TextColor(Color::srgb(0.9, 0.9, 0.9)), //文本颜色
+                    )
+                ]
+            ),
         ],
     ));
     commands.spawn(
@@ -255,12 +291,13 @@ pub fn create_home_ui(mut commands: Commands,asset: Res<AssetServer>) {
 
 pub fn check_zhuangbei_button(
     player: Query<&Player>,
-    interaction_query: Query<(&Interaction), (Changed<Interaction>, With<ZhuangBeiButton>)>,
+    mut interaction_query: Query<(&Interaction, &mut BorderColor), (Changed<Interaction>, With<ZhuangBeiButton>)>,
     mut text: Query<&mut Text, With<VollageMessage>>
 ) {
-    for inter in interaction_query.iter() {
+    for (inter,mut border_color) in interaction_query.iter_mut() {
         match inter {
             Interaction::Pressed => {
+                border_color.set_all(AQUA);
                 if let Ok(player) =  player.single() {
                     let name = player.main_gun.get_name();
                     let second_name = player.second_gun.get_name();
@@ -287,9 +324,51 @@ pub fn check_zhuangbei_button(
                     
                 }
                 
-            },
-            _ => {
+            }
+            Interaction::Hovered => {
+                border_color.set_all(OLIVE);
+            }
+            Interaction::None => {
+                border_color.set_all(WHITE);
+            }
+        }
+    }
+}
 
+
+pub fn check_recovery_button(
+    mut player: Query<&mut Player>,
+    mut interaction_query: Query<(&Interaction, &mut BorderColor), (Changed<Interaction>, With<RecoveryButton>)>,
+    mut text: Query<&mut Text, With<VollageMessage>>
+) {
+    if let Ok((inter,mut border_color)) =  interaction_query.single_mut() {
+        match inter {
+            Interaction::Pressed => {
+                border_color.set_all(AQUA);
+                if let Ok(mut text) = text.single_mut() {
+                    if let Ok(mut player) = player.single_mut() {
+
+                        if player.max_health == player.health {
+                            text.0 = format!("二傻子，装甲片满的，补充个锤子！！");
+                        } else {
+                            if player.max_health > 0 {
+                                player.health = player.max_health;
+
+                                text.0 = format!("战车装甲片已更新！！");
+                            } else {
+                                text.0 = format!("无法更新装甲片，载重异常！！");
+                            }
+                        }
+                    }
+                }
+
+                
+            }
+            Interaction::Hovered => {
+                border_color.set_all(OLIVE);
+            }
+            Interaction::None => {
+                border_color.set_all(WHITE);
             }
         }
     }

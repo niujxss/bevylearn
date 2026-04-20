@@ -42,6 +42,7 @@ pub enum Engine {
 pub enum Appstatus {
     #[default] // 标记默认状态是 Setup
     Menu,
+    Game,
     Vollage,
 }
 
