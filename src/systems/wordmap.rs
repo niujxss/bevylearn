@@ -19,16 +19,31 @@ pub fn create_wordmap(mut commands: Commands, asset: Res<AssetServer>) {
                 height: percent(90),
                 position_type: PositionType::Absolute,
                 top: px(0),
+                border: UiRect::all(px(2)),// 设置边框为2像素
                 ..default()
             },
-            ImageNode::new(image),
+            
             Button,
-            Text::new("荒芜废土"),
-            TextFont {
-                font: asset.load("fonts/STKAITI.TTF"),
-                font_size: 33.0,
-                ..default()
-            },
+            BorderColor::all(Color::WHITE), //边框颜色,白色
+            //BorderRadius::all(px(8.0)), // 8像素的圆角半径，更现代
+            BackgroundColor(Color::BLACK),
+            
+            children![
+                (
+                    ImageNode::new(image),
+                    Node {
+                        width: percent(100),
+                        height: percent(100),
+                        ..default()
+                    },
+                    Text::new("荒芜废土"),
+                    TextFont {
+                        font: asset.load("fonts/STKAITI.TTF"),
+                        font_size: 33.0,
+                        ..default()
+                    },
+                )
+            ]
         )
     );
 
@@ -90,13 +105,32 @@ pub fn check_back_vollage_button(
     if let Ok((inter, mut border_color)) = interatcion_query.single_mut() {
         match inter {
             Interaction::None => {
-
+                border_color.set_all(WHITE);
             },
             Interaction::Hovered => {
                 border_color.set_all(OLIVE);
             },
             Interaction::Pressed => {
                 next_status.set(Appstatus::Vollage);
+            }
+        }
+    }
+}
+
+
+pub fn check_word_map_button(
+    mut interaction_query: Query<(&Interaction, &mut BorderColor), (Changed<Interaction>, With<WorldMapButton>)>
+) {
+    if let Ok((inter, mut border_color)) = interaction_query.single_mut() {
+        match inter {
+            Interaction::None => {
+                border_color.set_all(WHITE);
+            },
+            Interaction::Hovered => {
+                border_color.set_all(OLIVE);
+            },
+            Interaction::Pressed => {
+                border_color.set_all(AQUA);
             }
         }
     }

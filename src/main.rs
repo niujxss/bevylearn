@@ -28,7 +28,8 @@ fn main() {
             ).run_if(in_state(Appstatus::Vollage)))
         .add_systems(OnEnter(Appstatus::WorldMap), create_wordmap)
         .add_systems(Update, (
-                check_back_vollage_button
+                check_back_vollage_button,
+                check_word_map_button,
             ).run_if(in_state(Appstatus::WorldMap)))
         .run();
 

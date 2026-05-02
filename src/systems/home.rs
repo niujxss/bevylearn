@@ -351,7 +351,7 @@ pub fn check_zhuangbei_button(
 
 
 pub fn check_recovery_button(
-    mut player: Query<&mut Player>,
+    mut player: Query<(&mut Player, &mut Cannon)>,
     mut interaction_query: Query<(&Interaction, &mut BorderColor), (Changed<Interaction>, With<RecoveryButton>)>,
     mut text: Query<&mut Text, With<VollageMessage>>
 ) {
@@ -360,18 +360,26 @@ pub fn check_recovery_button(
             Interaction::Pressed => {
                 border_color.set_all(AQUA);
                 if let Ok(mut text) = text.single_mut() {
-                    if let Ok(mut player) = player.single_mut() {
+                    if let Ok((mut player, mut cannon)) = player.single_mut() {
 
                         if player.max_health == player.health {
-                            text.0 = format!("二傻子，装甲片满的，补充个锤子！！");
+                            text.0 = format!("二傻子，装甲片满的，补充个锤子！！\n");
                         } else {
                             if player.max_health > 0 {
                                 player.health = player.max_health;
 
-                                text.0 = format!("战车装甲片已更新！！");
+                                text.0 = format!("战车装甲片已更新！！\n");
                             } else {
-                                text.0 = format!("无法更新装甲片，载重异常！！");
+                                text.0 = format!("无法更新装甲片，载重异常！！\n");
                             }
+                        }
+
+                        if cannon.current_ammo != cannon.max_ammo {
+                            cannon.current_ammo = cannon.max_ammo;
+                            text.0 += format!("炮弹已更新！！，补充炮弹{}颗",(cannon.max_ammo - cannon.current_ammo)).as_str();
+
+                        } else {
+                            text.0 += &format!("炮弹不需要补充！！");
                         }
                     }
                 }
