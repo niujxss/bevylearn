@@ -9,7 +9,7 @@ struct VollageUi;
 struct MiscUi;
 
 #[derive(Component)]
-struct ChuJiButton;
+pub struct ChuJiButton;
 
 #[derive(Component)]
 struct UpdateButton;
@@ -44,14 +44,15 @@ pub fn create_home_ui(mut commands: Commands, asset: Res<AssetServer>, mut playe
     
     commands.spawn((
         VollageUi,
+        DespawnOnExit(Appstatus::Vollage), // 离开该状态时销毁该实体
         Node {
             width: percent(100), // 父节点，没有父节点，所以父节点是窗口
             height: percent(60),
             position_type: PositionType::Absolute, // 绝对定位
             top: px(0),
-            align_items: AlignItems::FlexEnd, // 子节点垂直贴底 
+            align_items: AlignItems::FlexEnd, // 子节点垂直贴底 （垂直方向上底端对齐）
             justify_content: JustifyContent::Center, // 子节点水平居中 
-            flex_direction: FlexDirection::Row, // 子元素水平排列
+            flex_direction: FlexDirection::Row, // 子元素水平排列， 从左到右排列， 还可以选择 column ,垂直排列，从上到下
             row_gap: px(20.0), // 垂直间隔
             column_gap: px(20.0), // 水平间隔
             padding: UiRect::all(px(20.0)), // 内边距20
@@ -159,6 +160,7 @@ pub fn create_home_ui(mut commands: Commands, asset: Res<AssetServer>, mut playe
     commands.spawn(
     (
         MiscUi,
+        DespawnOnExit(Appstatus::Vollage),
         Node {
             width: percent(100), // 父节点，没有父节点，所以父节点是窗口
             height: percent(40),
@@ -363,6 +365,26 @@ pub fn check_recovery_button(
                 }
 
                 
+            }
+            Interaction::Hovered => {
+                border_color.set_all(OLIVE);
+            }
+            Interaction::None => {
+                border_color.set_all(WHITE);
+            }
+        }
+    }
+}
+
+pub fn check_chuji_button(
+    mut interaction_query: Query<(&Interaction, &mut BorderColor), (Changed<Interaction>, With<ChuJiButton>)>,
+    mut next_status: ResMut<NextState<Appstatus>>
+) {
+    if let Ok((interatction, mut border_color) )= interaction_query.single_mut() {
+        match interatction {
+            Interaction::Pressed => {
+                border_color.set_all(AQUA);
+                next_status.set(Appstatus::WorldMap);
             }
             Interaction::Hovered => {
                 border_color.set_all(OLIVE);

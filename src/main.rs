@@ -23,8 +23,13 @@ fn main() {
         .add_systems(OnEnter(Appstatus::Vollage), create_home_ui)
         .add_systems(Update,(
             check_zhuangbei_button,
-            check_recovery_button
+            check_recovery_button,
+            check_chuji_button,
             ).run_if(in_state(Appstatus::Vollage)))
+        .add_systems(OnEnter(Appstatus::WorldMap), create_wordmap)
+        .add_systems(Update, (
+                check_back_vollage_button
+            ).run_if(in_state(Appstatus::WorldMap)))
         .run();
 
 }

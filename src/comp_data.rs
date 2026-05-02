@@ -17,6 +17,17 @@ pub struct Player {
     pub engine: Engine,
 }
 
+#[derive(Component)]
+pub struct PlayerStatus {
+    pub health: i32,
+    pub max_health: i32,
+    pub main_ammo_max: i32,
+    pub main_ammo_current: i32,
+    pub second_ammo_max: i32,
+    pub second_ammo_current: i32,
+
+}
+
 pub enum MainGun {
     NONE,
     LEVEL1(String, String, f32, i32),
@@ -44,6 +55,7 @@ pub enum Appstatus {
     Menu,
     Game,
     Vollage,
+    WorldMap,
 }
 
 impl SecondGun {
@@ -135,6 +147,21 @@ impl Engine {
             Engine::NONE => 0.0,
             Engine::LEVEL1(_, _, zhongliang) => *zhongliang,
             Engine::LEVEL2(_, _, zhongliang) => *zhongliang,
+        }
+    }
+}
+
+
+
+impl PlayerStatus {
+    pub fn new() -> Self {
+        PlayerStatus {
+            health: 0,
+            max_health: 0,
+            main_ammo_max: 0,
+            main_ammo_current: 0,
+            second_ammo_max: 0,
+            second_ammo_current: 0,
         }
     }
 }
