@@ -1,0 +1,8 @@
+{
+    SecGunLevel1: (
+        name: "啄木鸟机枪",
+        description: "7.62mm同轴机枪，射速每分钟800发，用来驱赶靠近的拾荒者",
+        damage: 1,
+        weight: 0.01,
+    ),
+}

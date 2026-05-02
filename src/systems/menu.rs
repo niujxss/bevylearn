@@ -138,18 +138,22 @@ pub fn stop_button_systems(
     }
 }
 
-pub fn start_game(mut commands: Commands, mut next_status: ResMut<NextState<Appstatus>>, db:Res<CannonDataBase>) {
+pub fn start_game(mut commands: Commands, mut next_status: ResMut<NextState<Appstatus>>, 
+    db: Res<CannonDataBase>, sec_db: Res<SecgunDataBase>, eng_db: Res<EngineDataBase>) 
+{
     
     
-    let canno_config = db.get(CannonType::CANNON_LEVEL1).unwrap();
+    let canno_config = db.get(CannonType::CannonLevel1).unwrap();
+    let secgun_config = sec_db.get(SecgunType::SecGunLevel1).unwrap();
+    let engine_config = eng_db.get(EngineType::EngineLevel1).unwrap();
     commands.spawn((
         Player {
             health: 0,
             max_health: 0,
-            second_gun: SecondGun::LEVEL1("啄木鸟机枪".to_string(), "7.62mm同轴机枪，射速每分钟800发，用来驱赶靠近的拾荒者".to_string(), 0.01, 1),
-            engine: Engine::LEVEL1("老烟枪".to_string(), "二手柴油机，启动时会冒出浓浓的黑烟，最高时速只有30公里，但胜在能烧各种劣质燃油".to_string(), 0.5),
         },
-        Cannon::new(CannonType::CANNON_LEVEL1, canno_config),
+        Cannon::new(CannonType::CannonLevel1, canno_config),
+        SecGun::new(SecgunType::SecGunLevel1, secgun_config),
+        Engine::new(EngineType::EngineLevel1, engine_config)
         
     ));
     

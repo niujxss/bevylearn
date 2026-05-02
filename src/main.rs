@@ -43,6 +43,12 @@ asset : Res<AssetServer>) {
     );
     let db = CannonDataBase::load().unwrap();
     commands.insert_resource(db);
+
+    let db = SecgunDataBase::load().unwrap();
+    commands.insert_resource(db);
+
+    let db = EngineDataBase::load().unwrap();
+    commands.insert_resource(db);
 }
 
 

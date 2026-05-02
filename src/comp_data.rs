@@ -15,13 +15,21 @@ pub struct StopGameUi;
 pub struct Player {
     pub health: i32,
     pub max_health: i32,
-    pub second_gun: SecondGun,
-    pub engine: Engine,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum CannonType {
-    CANNON_LEVEL1,
+    CannonLevel1,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub enum SecgunType {
+    SecGunLevel1,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub enum EngineType {
+    EngineLevel1,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -33,12 +41,40 @@ pub struct CannonConfig {
     pub weight: f32,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SecgunConfig {
+    pub name: String,
+    pub description: String,
+    pub damage: u32,
+    pub weight: f32,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct EngineConfig {
+    pub name: String,
+    pub description: String,
+    pub weight: f32,
+}
+
+// 主炮Map资源
 #[derive(Resource)]
 pub struct CannonDataBase {
     pub configs: HashMap<CannonType, CannonConfig>,
 }
 
+//副炮资源表
+#[derive(Resource)]
+pub struct SecgunDataBase {
+    pub configs: HashMap<SecgunType, SecgunConfig>,
+}
 
+//引擎资源表
+#[derive(Resource)]
+pub struct EngineDataBase {
+    pub configs: HashMap<EngineType, EngineConfig>,
+}
+
+//主炮组件
 #[derive(Component)]
 pub struct Cannon {
     pub name: String,
@@ -52,20 +88,29 @@ pub struct Cannon {
 
 }
 
+//副炮组件
+#[derive(Component)]
+pub struct SecGun {
+    pub name: String,
+    pub description: String,
+    pub damage: u32,
+    pub weight: f32,
+    pub available: bool,
+    pub secgun_type: SecgunType,
 
-
-
-pub enum SecondGun {
-    NONE,
-    LEVEL1(String, String, f32, i32),
-    LEVEL2(String, String, f32, i32),
 }
 
-pub enum Engine {
-    NONE,
-    LEVEL1(String, String, f32),
-    LEVEL2(String, String, f32),
+//引擎组件
+#[derive(Component)]
+pub struct Engine {
+    pub name: String,
+    pub description: String,
+    pub weight: f32,
+    pub available: bool,
+    pub enginetype: EngineType,
+
 }
+
 
 
 
@@ -78,65 +123,10 @@ pub enum Appstatus {
     WorldMap,
 }
 
-impl SecondGun {
-    pub fn get_name(&self) -> &str {
-        match self {
-            SecondGun::NONE => "无",
-            SecondGun::LEVEL1(name, _, _, _) => name,
-            SecondGun::LEVEL2(name, _, _, _) => name,
-        }
-    }
-    pub fn get_message(&self) -> &str {
-        match self {
-            SecondGun::NONE => "无",
-            SecondGun::LEVEL1(_, message, _, _) => message,
-            SecondGun::LEVEL2(_, message, _, _) => message,
-        }
-    }
-
-    pub fn get_zhongliang(&self) -> f32 {
-        match self {
-            SecondGun::NONE => 0.0,
-            SecondGun::LEVEL1(_, _, zhongliang, _) => *zhongliang,
-            SecondGun::LEVEL2(_, _, zhongliang, _) => *zhongliang,
-        }
-    }
-
-    pub fn get_shanghai(&self) -> i32 {
-        match self {
-            SecondGun::NONE => 0,
-            SecondGun::LEVEL1(_, _, _, shanghai) => *shanghai,
-            SecondGun::LEVEL2(_, _, _, shanghai) => *shanghai,
-        }
-    }
-}
 
 
-impl Engine {
-    pub fn get_name(&self) -> &str {
-        match self {
-            Engine::NONE => "无",
-            Engine::LEVEL1(name, _, _) => name,
-            Engine::LEVEL2(name, _, _) => name,
-        }
-    }
 
-    pub fn get_message(&self) -> &str {
-        match self {
-            Engine::NONE => "无",
-            Engine::LEVEL1(_, message, _) => message,
-            Engine::LEVEL2(_, message, _) => message,
-        }
-    }
 
-    pub fn get_zhongliang(&self) -> f32 {
-        match self {
-            Engine::NONE => 0.0,
-            Engine::LEVEL1(_, _, zhongliang) => *zhongliang,
-            Engine::LEVEL2(_, _, zhongliang) => *zhongliang,
-        }
-    }
-}
 
 
 
@@ -177,6 +167,33 @@ impl Cannon {
 }
 
 
+impl SecGun {
+    pub fn new(secgun_type: SecgunType, secgun_config: &SecgunConfig) -> Self {
+        SecGun {
+            available: true,
+            name: secgun_config.name.clone(),
+            description: secgun_config.description.clone(),
+            damage: secgun_config.damage,
+            weight: secgun_config.weight,
+            secgun_type: secgun_type,
+        }
+    }
+}
+
+impl Engine {
+    pub fn new(engine_type: EngineType, engine_config: &EngineConfig) -> Self {
+        Engine {
+            available: true,
+            name: engine_config.name.clone(),
+            description: engine_config.description.clone(),
+            weight: engine_config.weight,
+            enginetype: engine_type,
+        }
+    }
+}
+
+
+
 impl CannonDataBase {
     pub fn load() -> Result<CannonDataBase>{
         let config_path = "configs/Cannons.ron";
@@ -195,5 +212,48 @@ impl CannonDataBase {
 
     pub fn get(&self, cannon_type: CannonType) -> Option<&CannonConfig> {
         self.configs.get(&cannon_type)
+    }
+}
+
+
+impl SecgunDataBase {
+    pub fn load() -> Result<SecgunDataBase>{
+        let config_path = "configs/SecGun.ron";
+
+        let config_str = std::fs::read_to_string(config_path).unwrap();
+
+        let configs : HashMap<SecgunType, SecgunConfig> = ron::from_str(&config_str).unwrap();
+
+        Ok(
+            Self {
+                configs
+            }
+        )
+
+    }
+
+    pub fn get(&self, secgun_type: SecgunType) -> Option<&SecgunConfig> {
+        self.configs.get(&secgun_type)
+    }
+}
+
+impl EngineDataBase {
+    pub fn load() -> Result<EngineDataBase>{
+        let config_path = "configs/Engine.ron";
+
+        let config_str = std::fs::read_to_string(config_path).unwrap();
+
+        let configs : HashMap<EngineType, EngineConfig> = ron::from_str(&config_str).unwrap();
+
+        Ok(
+            Self {
+                configs
+            }
+        )
+
+    }
+
+    pub fn get(&self, engine_type: EngineType) -> Option<&EngineConfig> {
+        self.configs.get(&engine_type)
     }
 }

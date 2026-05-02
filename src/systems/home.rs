@@ -27,19 +27,30 @@ struct BeiBaoButton;
 pub struct VollageMessage;
 
 
-fn update_player_maxhealth(player: &mut Player, cannon: &Cannon) {
-    let zhongliang = player.engine.get_zhongliang() - cannon.weight - player.second_gun.get_zhongliang();
+fn update_player_maxhealth(player: &mut Player, cannon: &Cannon, secgun: &SecGun, engine: &Engine) {
+    let mut cannone_weight = 0.;
+    let mut secgun_weight = 0.;
+
+    if cannon.available {
+        cannone_weight = cannon.weight;
+    }
+
+    if secgun.available {
+        secgun_weight = secgun.weight;
+    }
+
+    let zhongliang = engine.weight - cannone_weight - secgun_weight;
     let health = (zhongliang * 100.0) as i32;
     player.max_health = health; 
 }
 
-pub fn create_home_ui(mut commands: Commands, asset: Res<AssetServer>, mut player: Query<(&mut Player, &Cannon)>) {
+pub fn create_home_ui(mut commands: Commands, asset: Res<AssetServer>, mut player: Query<(&mut Player, &Cannon, &SecGun, &Engine)>) {
 
     let image: Handle<Image> = asset.load("vollage.png");
     let tank_image = asset.load("tank.png");
 
-    if let Ok((mut player,cannon)) = player.single_mut() {
-        update_player_maxhealth(&mut player,cannon);
+    if let Ok((mut player,cannon, secgun, engine)) = player.single_mut() {
+        update_player_maxhealth(&mut player, cannon, secgun, engine);
     }
     
     commands.spawn((
@@ -292,7 +303,7 @@ pub fn create_home_ui(mut commands: Commands, asset: Res<AssetServer>, mut playe
 }
 
 pub fn check_zhuangbei_button(
-    player: Query<(&Player,&Cannon)>,
+    player: Query<(&Player, &Cannon, &SecGun, &Engine)>,
     mut interaction_query: Query<(&Interaction, &mut BorderColor), (Changed<Interaction>, With<ZhuangBeiButton>)>,
     mut text: Query<&mut Text, With<VollageMessage>>
 ) {
@@ -300,23 +311,22 @@ pub fn check_zhuangbei_button(
         match inter {
             Interaction::Pressed => {
                 border_color.set_all(AQUA);
-                if let Ok((player,cannon)) =  player.single() {
+                if let Ok((player,cannon, secgun, engine)) =  player.single() {
                     
                     let name = &cannon.name;
-                    let second_name = player.second_gun.get_name();
-                    let eng_name = player.engine.get_name();
+                    let second_name = &secgun.name;
+                    let eng_name = &engine.name;
 
                     let main_message = &cannon.description;
-                    let second_message = player.second_gun.get_message();
-                    let eng_message = player.engine.get_message();
+                    let second_message = &secgun.description;
+                    let eng_message = &engine.description;
 
-                    //let d_main = player.main_gun.get_zhongliang();
                     let d_main = cannon.weight;
-                    let d_second = player.second_gun.get_zhongliang();
-                    let d_eng = player.engine.get_zhongliang();
+                    let d_second = secgun.weight;
+                    let d_eng = engine.weight;
 
                     let sh_main = cannon.damage;
-                    let sh_second = player.second_gun.get_shanghai();
+                    let sh_second = secgun.damage;
 
                     if let Ok(mut text) = text.single_mut() {
                         text.0 = format!("装甲片：{}/{}\n\n主炮：{}\n\t信息：{}\n\t重量：{}T\t\t伤害：{}\n副炮：{}\n\t信息：{}\n\t重量：{}T\t\t伤害：{}\n引擎：{}\n\t信息：{}\n\t重量：{}T", 
