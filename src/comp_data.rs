@@ -1,4 +1,7 @@
 use bevy::prelude::*;
+use serde::Deserialize;
+use serde::Serialize;
+use std::collections::HashMap;
 
 #[derive(Component)]
 pub struct EnumUi;
@@ -12,27 +15,44 @@ pub struct StopGameUi;
 pub struct Player {
     pub health: i32,
     pub max_health: i32,
-    pub main_gun: MainGun,
     pub second_gun: SecondGun,
     pub engine: Engine,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub enum CannonType {
+    CANNON_LEVEL1,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CannonConfig {
+    pub name: String,
+    pub description: String,
+    pub max_ammo: u32,
+    pub damage: u32,
+    pub weight: f32,
+}
+
+#[derive(Resource)]
+pub struct CannonDataBase {
+    pub configs: HashMap<CannonType, CannonConfig>,
+}
+
+
 #[derive(Component)]
-pub struct PlayerStatus {
-    pub health: i32,
-    pub max_health: i32,
-    pub main_ammo_max: i32,
-    pub main_ammo_current: i32,
-    pub second_ammo_max: i32,
-    pub second_ammo_current: i32,
+pub struct Cannon {
+    pub name: String,
+    pub description: String,
+    pub max_ammo: u32,
+    pub damage: u32,
+    pub weight: f32,
+    pub current_ammo: u32,
+    pub available: bool,
+    pub cannon_type: CannonType,
 
 }
 
-pub enum MainGun {
-    NONE,
-    LEVEL1(String, String, f32, i32),
-    LEVEL2(String, String, f32, i32),
-}
+
 
 
 pub enum SecondGun {
@@ -91,39 +111,6 @@ impl SecondGun {
     }
 }
 
-impl MainGun {
-    pub fn get_name(&self) -> &str {
-        match self {
-            MainGun::NONE => "无",
-            MainGun::LEVEL1(name, _, _, _) => name,
-            MainGun::LEVEL2(name, _, _, _) => name,
-        }
-    }
-
-    pub fn get_message(&self) -> &str {
-        match self {
-            MainGun::NONE => "无",
-            MainGun::LEVEL1(_, message, _, _) => message,
-            MainGun::LEVEL2(_, message, _, _) => message,
-        }
-    }
-
-    pub fn get_zhongliang(&self) -> f32 {
-        match self {
-            MainGun::NONE => 0.0,
-            MainGun::LEVEL1(_, _, zhongliang, _) => *zhongliang,
-            MainGun::LEVEL2(_, _, zhongliang, _) => *zhongliang,
-        }
-    }
-
-    pub fn get_shanghai(&self) -> i32 {
-        match self {
-            MainGun::NONE => 0,
-            MainGun::LEVEL1(_, _, _, shanghai) => *shanghai,
-            MainGun::LEVEL2(_, _, _, shanghai) => *shanghai,
-        }
-    }
-}
 
 impl Engine {
     pub fn get_name(&self) -> &str {
@@ -153,15 +140,60 @@ impl Engine {
 
 
 
-impl PlayerStatus {
-    pub fn new() -> Self {
-        PlayerStatus {
-            health: 0,
-            max_health: 0,
-            main_ammo_max: 0,
-            main_ammo_current: 0,
-            second_ammo_max: 0,
-            second_ammo_current: 0,
+impl Cannon {
+    pub fn new(cannon_type: CannonType, cannon_config: &CannonConfig) -> Self {
+        Cannon {
+            available: true,
+            name: cannon_config.name.clone(),
+            description: cannon_config.description.clone(),
+            max_ammo: cannon_config.max_ammo,
+            damage: cannon_config.damage,
+            weight: cannon_config.weight,
+            current_ammo: cannon_config.max_ammo,
+            cannon_type: cannon_type,
         }
+    }
+
+    pub fn remove(&mut self) {
+        self.available = false;
+        self.name.clear();
+        self.description.clear();
+        self.max_ammo = 0;
+        self.damage = 0;
+        self.weight = 0.0;
+        self.current_ammo = 0;
+    }
+
+    pub fn update(&mut self,cannon_type: CannonType, cannon_config: &CannonConfig) {
+        self.available = false;
+        self.name = cannon_config.name.clone();
+        self.description = cannon_config.description.clone();
+        self.max_ammo = cannon_config.max_ammo;
+        self.damage = cannon_config.damage;
+        self.weight = cannon_config.weight;
+        self.current_ammo = cannon_config.max_ammo;
+        self.cannon_type = cannon_type;
+    }
+}
+
+
+impl CannonDataBase {
+    pub fn load() -> Result<CannonDataBase>{
+        let config_path = "configs/Cannons.ron";
+
+        let config_str = std::fs::read_to_string(config_path).unwrap();
+
+        let configs : HashMap<CannonType, CannonConfig> = ron::from_str(&config_str).unwrap();
+
+        Ok(
+            Self {
+                configs
+            }
+        )
+
+    }
+
+    pub fn get(&self, cannon_type: CannonType) -> Option<&CannonConfig> {
+        self.configs.get(&cannon_type)
     }
 }

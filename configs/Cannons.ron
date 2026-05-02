@@ -1,0 +1,9 @@
+{
+    CANNON_LEVEL1: (
+        name: "废铁滑膛炮",
+        description: "用工地剩下的脚手架钢管焊接而成，没有膛线，精度全靠信仰",
+        max_ammo: 35,
+        damage: 5,
+        weight: 0.1,
+    ),
+}

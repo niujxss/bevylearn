@@ -41,6 +41,8 @@ asset : Res<AssetServer>) {
     commands.spawn(
         create_menu(&asset)
     );
+    let db = CannonDataBase::load().unwrap();
+    commands.insert_resource(db);
 }
 
 
