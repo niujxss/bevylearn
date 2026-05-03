@@ -119,7 +119,8 @@ pub fn check_back_vollage_button(
 
 
 pub fn check_word_map_button(
-    mut interaction_query: Query<(&Interaction, &mut BorderColor), (Changed<Interaction>, With<WorldMapButton>)>
+    mut interaction_query: Query<(&Interaction, &mut BorderColor), (Changed<Interaction>, With<WorldMapButton>)>,
+    mut next_status: ResMut<NextState<Appstatus>>,
 ) {
     if let Ok((inter, mut border_color)) = interaction_query.single_mut() {
         match inter {
@@ -131,6 +132,8 @@ pub fn check_word_map_button(
             },
             Interaction::Pressed => {
                 border_color.set_all(AQUA);
+                next_status.set(Appstatus::SearchEnemy);
+
             }
         }
     }

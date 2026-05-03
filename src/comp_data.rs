@@ -121,6 +121,7 @@ pub enum Appstatus {
     Game,
     Vollage,
     WorldMap,
+    SearchEnemy,
 }
 
 
