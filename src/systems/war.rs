@@ -70,6 +70,7 @@ struct EnemyTemplate {
     name: &'static str,
     hp: i32,
     damage: i32,
+    weight: u32,
     loot: &'static [LootEntry],
 }
 
@@ -78,6 +79,7 @@ const ENEMY_TEMPLATES: &[EnemyTemplate] = &[
         name: "锈铁野狗",
         hp: 25,
         damage: 3,
+        weight: 6,
         loot: &[
             LootEntry { item: ItemType::ScrapIron, quantity: 2, probability: 1.0 },
             LootEntry { item: ItemType::Leather, quantity: 1, probability: 0.3 },
@@ -87,6 +89,7 @@ const ENEMY_TEMPLATES: &[EnemyTemplate] = &[
         name: "拾荒机器人",
         hp: 35,
         damage: 5,
+        weight: 3,
         loot: &[
             LootEntry { item: ItemType::ScrapIron, quantity: 3, probability: 1.0 },
             LootEntry { item: ItemType::CopperWire, quantity: 2, probability: 1.0 },
@@ -97,6 +100,7 @@ const ENEMY_TEMPLATES: &[EnemyTemplate] = &[
         name: "变异巨熊",
         hp: 60,
         damage: 8,
+        weight: 1,
         loot: &[
             LootEntry { item: ItemType::HighStrengthSpring, quantity: 3, probability: 1.0 },
             LootEntry { item: ItemType::BearPaw, quantity: 1, probability: 1.0 },
@@ -105,12 +109,20 @@ const ENEMY_TEMPLATES: &[EnemyTemplate] = &[
 ];
 
 fn pick_enemy() -> &'static EnemyTemplate {
+    let total_weight: u32 = ENEMY_TEMPLATES.iter().map(|t| t.weight).sum();
     let seed = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
         .unwrap()
-        .subsec_nanos() as usize;
-    let idx = seed % ENEMY_TEMPLATES.len();
-    &ENEMY_TEMPLATES[idx]
+        .subsec_nanos() as u32;
+    let roll = seed % total_weight;
+    let mut cumulative = 0;
+    for t in ENEMY_TEMPLATES.iter() {
+        cumulative += t.weight;
+        if roll < cumulative {
+            return t;
+        }
+    }
+    &ENEMY_TEMPLATES[ENEMY_TEMPLATES.len() - 1]
 }
 
 fn roll_loot(template: &EnemyTemplate) -> Vec<(ItemType, u32)> {
@@ -519,6 +531,7 @@ pub fn check_retreat_button(
 pub fn check_battle_result(
     mut commands: Commands,
     battle_over: Res<BattleOver>,
+    mut log: ResMut<BattleLog>,
     enemy_query: Query<&Enemy>,
     fire_query: Query<Entity, With<FireButton>>,
     retreat_query: Query<Entity, With<RetreatButton>>,
@@ -541,6 +554,11 @@ pub fn check_battle_result(
             let enemy = enemy_entity;
             if let Some(template) = find_template(&enemy.name) {
                 let loot = roll_loot(template);
+                // 先显示掉落消息到日志
+                for (item, qty) in &loot {
+                    log.add(format!("掉落：{} × {}", item.name(), qty));
+                }
+                // 再入库
                 commands.queue(move |world: &mut World| {
                     let mut backpack = world.get_resource_or_insert_with(|| Backpack::new());
                     for (item, qty) in &loot {
