@@ -122,6 +122,7 @@ pub enum Appstatus {
     Vollage,
     WorldMap,
     SearchEnemy,
+    War,
 }
 
 

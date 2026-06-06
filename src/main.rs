@@ -42,6 +42,15 @@ fn main() {
                 check_search_back_button,
                 check_search_attack_button,
             ).run_if(in_state(Appstatus::SearchEnemy)))
+
+        .add_systems(OnEnter(Appstatus::War), create_battle_ui)
+        .add_systems(Update, (
+                update_battle_display,
+                check_fire_button,
+                check_retreat_button,
+                check_battle_result,
+                check_result_button,
+            ).run_if(in_state(Appstatus::War)))
         .run();
 
 }

@@ -291,7 +291,7 @@ pub fn check_search_attack_button(
             },
             Interaction::Pressed => {
                 border_color.set_all(AQUA);
-                //next_status.set(Appstatus::War);
+                next_status.set(Appstatus::War);
 
             }
         }
