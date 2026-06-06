@@ -25,6 +25,7 @@ fn main() {
             check_zhuangbei_button,
             check_recovery_button,
             check_chuji_button,
+            check_beibao_button,
             ).run_if(in_state(Appstatus::Vollage)))
 
         .add_systems(OnEnter(Appstatus::WorldMap), create_wordmap)

@@ -259,3 +259,66 @@ impl EngineDataBase {
         self.configs.get(&engine_type)
     }
 }
+
+// ============ 物品 & 背包系统 ============
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum ItemType {
+    ScrapIron,            // 废铁
+    Leather,              // 皮革
+    CopperWire,           // 铜线
+    DryBattery,           // 干电池
+    HighStrengthSpring,   // 高强度弹簧
+    BearPaw,              // 熊掌
+}
+
+impl ItemType {
+    pub fn name(&self) -> &'static str {
+        match self {
+            ItemType::ScrapIron => "废铁",
+            ItemType::Leather => "皮革",
+            ItemType::CopperWire => "铜线",
+            ItemType::DryBattery => "干电池",
+            ItemType::HighStrengthSpring => "高强度弹簧",
+            ItemType::BearPaw => "熊掌",
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct ItemStack {
+    pub item_type: ItemType,
+    pub quantity: u32,
+}
+
+#[derive(Resource, Debug, Clone)]
+pub struct Backpack {
+    pub items: Vec<ItemStack>,
+}
+
+impl Backpack {
+    pub fn new() -> Self {
+        Self { items: Vec::new() }
+    }
+
+    pub fn add(&mut self, item_type: ItemType, quantity: u32) {
+        for stack in self.items.iter_mut() {
+            if stack.item_type == item_type {
+                stack.quantity += quantity;
+                return;
+            }
+        }
+        self.items.push(ItemStack { item_type, quantity });
+    }
+
+    pub fn summary(&self) -> String {
+        if self.items.is_empty() {
+            return "背包空空如也……".to_string();
+        }
+        let mut lines: Vec<String> = self.items
+            .iter()
+            .map(|s| format!("{} × {}", s.item_type.name(), s.quantity))
+            .collect();
+        lines.join("\n")
+    }
+}

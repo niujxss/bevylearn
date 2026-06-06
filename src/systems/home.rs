@@ -21,7 +21,7 @@ pub struct RecoveryButton;
 pub struct ZhuangBeiButton;
 
 #[derive(Component)]
-struct BeiBaoButton;
+pub struct BeiBaoButton;
 
 #[derive(Component)]
 pub struct VollageMessage;
@@ -396,12 +396,45 @@ pub fn check_recovery_button(
     }
 }
 
+pub fn check_beibao_button(
+    mut interaction_query: Query<(&Interaction, &mut BorderColor), (Changed<Interaction>, With<BeiBaoButton>)>,
+    backpack: Option<Res<Backpack>>,
+    mut text: Query<&mut Text, With<VollageMessage>>,
+) {
+    if let Ok((inter, mut border_color)) = interaction_query.single_mut() {
+        match inter {
+            Interaction::Pressed => {
+                border_color.set_all(AQUA);
+                if let Ok(mut t) = text.single_mut() {
+                    t.0 = match backpack {
+                        Some(ref bp) => {
+                            let s = bp.summary();
+                            if s.is_empty() {
+                                "背包空空如也……".to_string()
+                            } else {
+                                format!("📦 背包内容：\n{}", s)
+                            }
+                        }
+                        None => "背包空空如也……".to_string(),
+                    };
+                }
+            }
+            Interaction::Hovered => {
+                border_color.set_all(OLIVE);
+            }
+            Interaction::None => {
+                border_color.set_all(WHITE);
+            }
+        }
+    }
+}
+
 pub fn check_chuji_button(
     mut interaction_query: Query<(&Interaction, &mut BorderColor), (Changed<Interaction>, With<ChuJiButton>)>,
-    mut next_status: ResMut<NextState<Appstatus>>
+    mut next_status: ResMut<NextState<Appstatus>>,
 ) {
-    if let Ok((interatction, mut border_color) )= interaction_query.single_mut() {
-        match interatction {
+    if let Ok((interaction, mut border_color)) = interaction_query.single_mut() {
+        match interaction {
             Interaction::Pressed => {
                 border_color.set_all(AQUA);
                 next_status.set(Appstatus::WorldMap);

@@ -58,28 +58,79 @@ pub struct BattleOver {
 
 // ============ 敌人模板 ============
 
+use crate::comp_data::ItemType;
+
+struct LootEntry {
+    item: ItemType,
+    quantity: u32,
+    probability: f32, // 1.0 = 必定掉落
+}
+
 struct EnemyTemplate {
     name: &'static str,
     hp: i32,
     damage: i32,
+    loot: &'static [LootEntry],
 }
 
 const ENEMY_TEMPLATES: &[EnemyTemplate] = &[
-    EnemyTemplate { name: "废土掠夺者", hp: 30, damage: 4 },
-    EnemyTemplate { name: "变异巨鼠", hp: 20, damage: 3 },
-    EnemyTemplate { name: "拾荒者头目", hp: 35, damage: 5 },
-    EnemyTemplate { name: "辐射僵尸群", hp: 25, damage: 6 },
-    EnemyTemplate { name: "废铁战车", hp: 50, damage: 3 },
+    EnemyTemplate {
+        name: "锈铁野狗",
+        hp: 25,
+        damage: 3,
+        loot: &[
+            LootEntry { item: ItemType::ScrapIron, quantity: 2, probability: 1.0 },
+            LootEntry { item: ItemType::Leather, quantity: 1, probability: 0.3 },
+        ],
+    },
+    EnemyTemplate {
+        name: "拾荒机器人",
+        hp: 35,
+        damage: 5,
+        loot: &[
+            LootEntry { item: ItemType::ScrapIron, quantity: 3, probability: 1.0 },
+            LootEntry { item: ItemType::CopperWire, quantity: 2, probability: 1.0 },
+            LootEntry { item: ItemType::DryBattery, quantity: 1, probability: 0.1 },
+        ],
+    },
+    EnemyTemplate {
+        name: "变异巨熊",
+        hp: 60,
+        damage: 8,
+        loot: &[
+            LootEntry { item: ItemType::HighStrengthSpring, quantity: 3, probability: 1.0 },
+            LootEntry { item: ItemType::BearPaw, quantity: 1, probability: 1.0 },
+        ],
+    },
 ];
 
-fn pick_enemy() -> (String, i32, i32) {
+fn pick_enemy() -> &'static EnemyTemplate {
     let seed = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
         .unwrap()
         .subsec_nanos() as usize;
     let idx = seed % ENEMY_TEMPLATES.len();
-    let t = &ENEMY_TEMPLATES[idx];
-    (t.name.to_string(), t.hp, t.damage)
+    &ENEMY_TEMPLATES[idx]
+}
+
+fn roll_loot(template: &EnemyTemplate) -> Vec<(ItemType, u32)> {
+    let now = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap();
+    let mut results = Vec::new();
+    for (i, entry) in template.loot.iter().enumerate() {
+        // 用时间 + 索引生成种子，让每次 roll 不同
+        let seed = ((now.subsec_nanos() as u64).wrapping_add((i as u64) * 7919)) % 10000;
+        let roll = seed as f32 / 10000.0;
+        if roll < entry.probability {
+            results.push((entry.item, entry.quantity));
+        }
+    }
+    results
+}
+
+fn find_template(name: &str) -> Option<&'static EnemyTemplate> {
+    ENEMY_TEMPLATES.iter().find(|t| t.name == name)
 }
 
 // ============ 创建战斗 UI ============
@@ -90,7 +141,10 @@ pub fn create_battle_ui(
     player_query: Query<(&Player, &Cannon)>,
 ) {
     let (player, cannon) = player_query.single().unwrap();
-    let (enemy_name, enemy_hp, enemy_damage) = pick_enemy();
+    let template = pick_enemy();
+    let enemy_name = &template.name;
+    let enemy_hp = template.hp;
+    let enemy_damage = template.damage;
 
     // 初始化资源
     commands.insert_resource(BattleLog { messages: Vec::new() });
@@ -99,7 +153,7 @@ pub fn create_battle_ui(
     // 生成敌人实体
     commands.spawn((
         Enemy {
-            name: enemy_name.clone(),
+            name: enemy_name.to_string(),
             hp: enemy_hp,
             max_hp: enemy_hp,
             damage: enemy_damage,
@@ -465,6 +519,7 @@ pub fn check_retreat_button(
 pub fn check_battle_result(
     mut commands: Commands,
     battle_over: Res<BattleOver>,
+    enemy_query: Query<&Enemy>,
     fire_query: Query<Entity, With<FireButton>>,
     retreat_query: Query<Entity, With<RetreatButton>>,
     return_button_query: Query<Entity, With<ResultReturnButton>>,
@@ -478,6 +533,22 @@ pub fn check_battle_result(
     // 已经有返回按钮了就不重复生成
     if !return_button_query.is_empty() {
         return;
+    }
+
+    // 战斗胜利时发放战利品
+    if battle_over.player_won {
+        if let Ok(enemy_entity) = enemy_query.single() {
+            let enemy = enemy_entity;
+            if let Some(template) = find_template(&enemy.name) {
+                let loot = roll_loot(template);
+                commands.queue(move |world: &mut World| {
+                    let mut backpack = world.get_resource_or_insert_with(|| Backpack::new());
+                    for (item, qty) in &loot {
+                        backpack.add(*item, *qty);
+                    }
+                });
+            }
+        }
     }
 
     // 删除开火按钮和撤退按钮
