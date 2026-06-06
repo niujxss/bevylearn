@@ -319,41 +319,45 @@ pub fn create_battle_ui(
 pub fn update_battle_display(
     player_query: Query<(&Player, &Cannon)>,
     enemy_query: Query<&Enemy>,
-    mut enemy_hp_fill: Query<&mut Node, With<EnemyHpBarFill>>,
-    mut player_hp_fill: Query<&mut Node, With<PlayerHpBarFill>>,
-    mut enemy_hp_text: Query<&mut Text, With<EnemyHpText>>,
-    mut player_hp_text: Query<&mut Text, With<PlayerHpText>>,
-    mut player_ammo_text: Query<&mut Text, With<PlayerAmmoText>>,
-    mut log_text: Query<&mut Text, With<BattleLogText>>,
     log: Res<BattleLog>,
+    mut node_params: ParamSet<(
+        Query<&mut Node, With<EnemyHpBarFill>>,
+        Query<&mut Node, With<PlayerHpBarFill>>,
+    )>,
+    mut text_params: ParamSet<(
+        Query<&mut Text, With<EnemyHpText>>,
+        Query<&mut Text, With<PlayerHpText>>,
+        Query<&mut Text, With<PlayerAmmoText>>,
+        Query<&mut Text, With<BattleLogText>>,
+    )>,
 ) {
     // 更新敌方 HP 条
     if let Ok(enemy) = enemy_query.single() {
-        if let Ok(mut node) = enemy_hp_fill.single_mut() {
+        if let Ok(mut node) = node_params.p0().single_mut() {
             let pct = (enemy.hp as f32 / enemy.max_hp as f32).max(0.0) * 100.0;
             node.width = Val::Percent(pct);
         }
-        if let Ok(mut text) = enemy_hp_text.single_mut() {
+        if let Ok(mut text) = text_params.p0().single_mut() {
             text.0 = format!("HP: {}/{}", enemy.hp.max(0), enemy.max_hp);
         }
     }
 
     // 更新玩家 HP 条和弹药
     if let Ok((player, cannon)) = player_query.single() {
-        if let Ok(mut node) = player_hp_fill.single_mut() {
+        if let Ok(mut node) = node_params.p1().single_mut() {
             let pct = (player.health as f32 / player.max_health as f32).max(0.0) * 100.0;
             node.width = Val::Percent(pct);
         }
-        if let Ok(mut text) = player_hp_text.single_mut() {
+        if let Ok(mut text) = text_params.p1().single_mut() {
             text.0 = format!("HP: {}/{}", player.health.max(0), player.max_health);
         }
-        if let Ok(mut text) = player_ammo_text.single_mut() {
+        if let Ok(mut text) = text_params.p2().single_mut() {
             text.0 = format!("【你的战车】弹药: {}/{}", cannon.current_ammo, cannon.max_ammo);
         }
     }
 
     // 更新战斗日志
-    if let Ok(mut text) = log_text.single_mut() {
+    if let Ok(mut text) = text_params.p3().single_mut() {
         text.0 = log.messages.last().cloned().unwrap_or_default();
     }
 }
