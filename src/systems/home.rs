@@ -375,8 +375,9 @@ pub fn check_recovery_button(
                         }
 
                         if cannon.current_ammo != cannon.max_ammo {
+                            let tmp_ammo = cannon.current_ammo;
                             cannon.current_ammo = cannon.max_ammo;
-                            text.0 += format!("炮弹已更新！！，补充炮弹{}颗",(cannon.max_ammo - cannon.current_ammo)).as_str();
+                            text.0 += format!("炮弹已更新！！，补充炮弹{}颗",(cannon.max_ammo - tmp_ammo)).as_str();
 
                         } else {
                             text.0 += &format!("炮弹不需要补充！！");
