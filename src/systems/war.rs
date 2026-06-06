@@ -30,6 +30,9 @@ pub struct RetreatButton;
 #[derive(Component)]
 pub struct ResultReturnButton;
 
+#[derive(Component)]
+pub struct WarBg;
+
 // ============ Enemy 组件 ============
 
 #[derive(Component)]
@@ -110,6 +113,7 @@ pub fn create_battle_ui(
     commands.spawn((
         DespawnOnExit(Appstatus::War),
         Name::new("WarRoot"),
+        WarBg,
         Node {
             width: percent(100),
             height: percent(100),
@@ -464,13 +468,14 @@ pub fn check_battle_result(
     fire_query: Query<Entity, With<FireButton>>,
     retreat_query: Query<Entity, With<RetreatButton>>,
     return_button_query: Query<Entity, With<ResultReturnButton>>,
+    root_query: Query<Entity, With<WarBg>>,
     asset_server: Res<AssetServer>,
 ) {
     if !battle_over.is_changed() || !battle_over.over {
         return;
     }
 
-    // 战斗刚结束，已经有返回按钮了就不重复生成
+    // 已经有返回按钮了就不重复生成
     if !return_button_query.is_empty() {
         return;
     }
@@ -485,54 +490,58 @@ pub fn check_battle_result(
 
     let font = asset_server.load("fonts/STKAITI.TTF");
 
-    // 生成结果按钮
     let button_text = if battle_over.player_won {
         "继续探索"
     } else {
         "返回基地"
     };
 
-    commands.spawn((
-        DespawnOnExit(Appstatus::War),
-        Name::new("ResultButton"),
-        Node {
-            width: percent(90),
-            height: percent(15),
-            flex_direction: FlexDirection::Row,
-            justify_content: JustifyContent::Center,
-            align_items: AlignItems::Center,
-            column_gap: px(40.0),
-            ..default()
-        },
-        children![
-            (
-                Button,
+    // 把返回按钮作为 WarRoot 的子节点创建，确保布局正常
+    if let Ok(root) = root_query.single() {
+        commands.entity(root).with_children(|parent| {
+            parent.spawn((
+                DespawnOnExit(Appstatus::War),
+                Name::new("ResultButton"),
                 Node {
-                    width: px(200),
-                    height: px(55),
-                    border: UiRect::all(px(3)),
+                    width: percent(90),
+                    height: percent(15),
+                    flex_direction: FlexDirection::Row,
                     justify_content: JustifyContent::Center,
                     align_items: AlignItems::Center,
+                    column_gap: px(40.0),
                     ..default()
                 },
-                BorderColor::all(Color::WHITE),
-                BorderRadius::all(px(8.0)),
-                BackgroundColor(if battle_over.player_won {
-                    Color::srgb(0.1, 0.6, 0.1)
-                } else {
-                    Color::srgb(0.6, 0.1, 0.1)
-                }),
-                ResultReturnButton,
                 children![
                     (
-                        Text::new(button_text),
-                        TextFont { font, font_size: 28.0, ..default() },
-                        TextColor(Color::WHITE),
+                        Button,
+                        Node {
+                            width: px(200),
+                            height: px(55),
+                            border: UiRect::all(px(3)),
+                            justify_content: JustifyContent::Center,
+                            align_items: AlignItems::Center,
+                            ..default()
+                        },
+                        BorderColor::all(Color::WHITE),
+                        BorderRadius::all(px(8.0)),
+                        BackgroundColor(if battle_over.player_won {
+                            Color::srgb(0.1, 0.6, 0.1)
+                        } else {
+                            Color::srgb(0.6, 0.1, 0.1)
+                        }),
+                        ResultReturnButton,
+                        children![
+                            (
+                                Text::new(button_text),
+                                TextFont { font, font_size: 28.0, ..default() },
+                                TextColor(Color::WHITE),
+                            ),
+                        ],
                     ),
                 ],
-            ),
-        ],
-    ));
+            ));
+        });
+    }
 }
 
 // ============ 结果按钮按下 ============
