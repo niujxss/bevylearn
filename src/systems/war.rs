@@ -85,34 +85,24 @@ pub fn create_battle_ui(
     let enemy_hp = template.hp;
     let enemy_damage = template.damage;
 
-    // 加载敌人贴图
+    // ===== 提前加载所有资源 =====
+    let font: Handle<Font> = asset_server.load("fonts/STKAITI.TTF");
+    let tank_img: Handle<Image> = asset_server.load("tank.png");
+    let bg_img: Handle<Image> = asset_server.load("FeiTuHuangYuan_back.png");
     let enemy_img: Option<Handle<Image>> = template
         .image_path
         .clone()
         .map(|path| asset_server.load(path));
 
+    // ===== 初始化战斗资源 =====
     commands.insert_resource(BattleLog { messages: Vec::new() });
     commands.insert_resource(BattleOver { player_won: false, over: false });
 
-    let font: Handle<Font> = asset_server.load("fonts/STKAITI.TTF");
-    let font_content = font.clone();
-    let font_bottom = font.clone();
-    let enemy_name_clone = enemy_name.clone();
-
-    // 生成敌人实体
+    // ===== 生成敌人实体 =====
     commands.spawn((
-        Enemy {
-            name: enemy_name.to_string(),
-            hp: enemy_hp,
-            max_hp: enemy_hp,
-            damage: enemy_damage,
-        },
+        Enemy { name: enemy_name.clone(), hp: enemy_hp, max_hp: enemy_hp, damage: enemy_damage },
         DespawnOnExit(Appstatus::War),
     ));
-
-    let font: Handle<Font> = asset_server.load("fonts/STKAITI.TTF");
-    let tank_img = asset_server.load("tank.png");
-    let bg_img = asset_server.load("FeiTuHuangYuan_back.png");
 
     // ============ 根容器 ============
     let root_entity = commands.spawn((
@@ -151,7 +141,7 @@ pub fn create_battle_ui(
                 column_gap: px(20.0),
                 ..default()
             },
-        )).with_children(move |content| {
+        )).with_children(|content| {
             // 左侧：敌方
             content.spawn((
                 Node {
@@ -178,8 +168,8 @@ pub fn create_battle_ui(
                         ..default()
                     },
                     children![
-                        (Text::new("👾"), TextFont { font: font_content.clone(), font_size: 22.0, ..default() }, TextColor(Color::WHITE)),
-                        (Text::new(format!("【{}】", enemy_name_clone)), TextFont { font: font_content.clone(), font_size: 24.0, ..default() }, TextColor(Color::srgb(1.0, 0.4, 0.3))),
+                        (Text::new("👾"), TextFont { font: font.clone(), font_size: 22.0, ..default() }, TextColor(Color::WHITE)),
+                        (Text::new(format!("【{}】", enemy_name)), TextFont { font: font.clone(), font_size: 24.0, ..default() }, TextColor(Color::srgb(1.0, 0.4, 0.3))),
                     ],
                 ));
                 if let Some(img) = &enemy_img {
@@ -213,7 +203,7 @@ pub fn create_battle_ui(
                         BackgroundColor(Color::srgb(0.15, 0.05, 0.08)),
                         children![(
                             Text::new("💀"),
-                            TextFont { font: font_content.clone(), font_size: 48.0, ..default() },
+                            TextFont { font: font.clone(), font_size: 48.0, ..default() },
                             TextColor(Color::srgb(1.0, 0.3, 0.2)),
                         )],
                     ));
@@ -233,7 +223,7 @@ pub fn create_battle_ui(
                         ),
                         (
                             Text::new(format!("HP: {}/{}", enemy_hp, enemy_hp)),
-                            TextFont { font: font_content.clone(), font_size: 14.0, ..default() },
+                            TextFont { font: font.clone(), font_size: 14.0, ..default() },
                             TextColor(Color::srgb(1.0, 0.6, 0.6)),
                             EnemyHpText,
                         ),
@@ -266,8 +256,8 @@ pub fn create_battle_ui(
                         ..default()
                     },
                     children![
-                        (Text::new("⚔️"), TextFont { font: font_content.clone(), font_size: 22.0, ..default() }, TextColor(Color::WHITE)),
-                        (Text::new("你的战车"), TextFont { font: font_content.clone(), font_size: 24.0, ..default() }, TextColor(Color::srgb(0.3, 0.85, 1.0))),
+                        (Text::new("⚔️"), TextFont { font: font.clone(), font_size: 22.0, ..default() }, TextColor(Color::WHITE)),
+                        (Text::new("你的战车"), TextFont { font: font.clone(), font_size: 24.0, ..default() }, TextColor(Color::srgb(0.3, 0.85, 1.0))),
                     ],
                 ));
                 card.spawn((
@@ -301,7 +291,7 @@ pub fn create_battle_ui(
                         ),
                         (
                             Text::new(format!("HP: {}/{}  弹药: {}/{}", player.health, player.max_health, cannon.current_ammo, cannon.max_ammo)),
-                            TextFont { font: font_content.clone(), font_size: 14.0, ..default() },
+                            TextFont { font: font.clone(), font_size: 14.0, ..default() },
                             TextColor(Color::srgb(0.6, 1.0, 0.6)),
                             PlayerHpText,
                         ),
@@ -352,7 +342,7 @@ pub fn create_battle_ui(
                                 FireButton,
                                 children![(
                                     Text::new("🔥 开火"),
-                                    TextFont { font: font_bottom.clone(), font_size: 26.0, ..default() },
+                                    TextFont { font: font.clone(), font_size: 26.0, ..default() },
                                     TextColor(Color::srgb(1.0, 0.8, 0.8)),
                                 )],
                             ),
@@ -373,7 +363,7 @@ pub fn create_battle_ui(
                                 RetreatButton,
                                 children![(
                                     Text::new("🏃 撤退"),
-                                    TextFont { font: font_bottom.clone(), font_size: 26.0, ..default() },
+                                    TextFont { font: font.clone(), font_size: 26.0, ..default() },
                                     TextColor(Color::srgb(0.8, 0.8, 0.9)),
                                 )],
                             ),
@@ -395,12 +385,12 @@ pub fn create_battle_ui(
                         children![
                             (
                                 Text::new("📋 战况"),
-                                TextFont { font: font_bottom.clone(), font_size: 20.0, ..default() },
+                                TextFont { font: font.clone(), font_size: 20.0, ..default() },
                                 TextColor(Color::srgb(0.8, 0.8, 0.5)),
                             ),
                             (
                                 Text::new("战斗开始！"),
-                                TextFont { font: font_bottom.clone(), font_size: 18.0, ..default() },
+                                TextFont { font: font.clone(), font_size: 18.0, ..default() },
                                 TextColor(Color::srgb(0.8, 0.8, 0.8)),
                                 BattleLogText,
                                 TextLayout::new_with_justify(Justify::Center),
