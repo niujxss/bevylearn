@@ -91,6 +91,9 @@ pub fn create_battle_ui(
         .clone()
         .map(|path| asset_server.load(path));
 
+    commands.insert_resource(BattleLog { messages: Vec::new() });
+    commands.insert_resource(BattleOver { player_won: false, over: false });
+
     let font: Handle<Font> = asset_server.load("fonts/STKAITI.TTF");
     let font_content = font.clone();
     let font_bottom = font.clone();
