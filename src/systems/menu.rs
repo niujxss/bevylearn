@@ -1,7 +1,7 @@
-use bevy::prelude::*;
+use super::warehouse::WarehouseNeedsRefresh;
 use crate::comp_data::*;
 use bevy::color::palettes::basic::*;
-
+use bevy::prelude::*;
 pub fn create_menu(asset: &AssetServer) -> impl Bundle {
     let image = asset.load("Menu_image.png");
     (
@@ -141,8 +141,11 @@ pub fn stop_button_systems(
 pub fn start_game(mut commands: Commands, mut next_status: ResMut<NextState<Appstatus>>, 
     db: Res<CannonDataBase>, sec_db: Res<SecgunDataBase>, eng_db: Res<EngineDataBase>) 
 {
-    
-    
+    // 初始化背包、仓库和刷新标志
+    commands.insert_resource(Backpack::new());
+    commands.insert_resource(Warehouse::new());
+    commands.insert_resource(WarehouseNeedsRefresh(false));
+
     let canno_config = db.get(CannonType::CannonLevel1).unwrap();
     let secgun_config = sec_db.get(SecgunType::SecGunLevel1).unwrap();
     let engine_config = eng_db.get(EngineType::EngineLevel1).unwrap();

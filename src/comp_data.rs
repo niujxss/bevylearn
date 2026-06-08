@@ -296,12 +296,108 @@ pub struct Backpack {
     pub items: Vec<ItemStack>,
 }
 
+impl Default for Backpack {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+/// 背包最大格数（每行3格，共5行）
+pub const BACKPACK_MAX_SLOTS: usize = 15;
+
 impl Backpack {
     pub fn new() -> Self {
         Self { items: Vec::new() }
     }
 
-    pub fn add(&mut self, item_type: ItemType, quantity: u32) {
+    /// 添加物品。如果物品已存在则直接增加数量（不占新格）；
+    /// 如果是新物品且背包已满则返回错误。
+    pub fn add(&mut self, item_type: ItemType, quantity: u32) -> Result<(), String> {
+        // 如果该物品类型已存在，不占新格
+        let exists = self.items.iter().any(|s| s.item_type == item_type);
+        if !exists && self.items.len() >= BACKPACK_MAX_SLOTS {
+            return Err(format!("背包已满，无法携带更多物品！"));
+        }
+        for stack in self.items.iter_mut() {
+            if stack.item_type == item_type {
+                stack.quantity += quantity;
+                return Ok(());
+            }
+        }
+        self.items.push(ItemStack { item_type, quantity });
+        Ok(())
+    }
+
+    /// 移除指定数量的物品，数量不足或不存在时返回错误。
+    pub fn remove(&mut self, item_type: ItemType, quantity: u32) -> Result<(), String> {
+        for i in 0..self.items.len() {
+            if self.items[i].item_type == item_type {
+                if self.items[i].quantity < quantity {
+                    return Err(format!("{}不足，无法取出", item_type.name()));
+                }
+                self.items[i].quantity -= quantity;
+                if self.items[i].quantity == 0 {
+                    self.items.remove(i);
+                }
+                return Ok(());
+            }
+        }
+        Err(format!("背包中没有{}", item_type.name()))
+    }
+
+    /// 背包当前占用的格数
+    pub fn used_slots(&self) -> usize {
+        self.items.len()
+    }
+
+    /// 判断是否有空位容纳新物品类型
+    pub fn has_space_for(&self, item_type: ItemType) -> bool {
+        self.items.iter().any(|s| s.item_type == item_type)
+            || self.items.len() < BACKPACK_MAX_SLOTS
+    }
+
+    /// 文本摘要 - 3列网格格式
+    pub fn summary(&self) -> String {
+        if self.items.is_empty() {
+            return "背包空空如也……".to_string();
+        }
+        let mut grid = Vec::new();
+        let mut row = Vec::new();
+        for s in self.items.iter() {
+            row.push(format!("{:8}×{}", s.item_type.name(), s.quantity));
+            if row.len() == 3 {
+                grid.push(row.join("    "));
+                row.clear();
+            }
+        }
+        if !row.is_empty() {
+            grid.push(row.join("    "));
+        }
+        let header = format!("📦 背包 ({}/{})\n", self.used_slots(), BACKPACK_MAX_SLOTS);
+        header + &grid.join("\n")
+    }
+}
+
+// ============ 仓库系统 ============
+
+#[derive(Resource, Debug, Clone)]
+pub struct Warehouse {
+    pub items: Vec<ItemStack>,
+}
+
+impl Default for Warehouse {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl Warehouse {
+    pub fn new() -> Self {
+        Self { items: Vec::new() }
+    }
+
+    /// 存入物品（无限容量）
+    pub fn store(&mut self, item_type: ItemType, quantity: u32) {
         for stack in self.items.iter_mut() {
             if stack.item_type == item_type {
                 stack.quantity += quantity;
@@ -311,9 +407,27 @@ impl Backpack {
         self.items.push(ItemStack { item_type, quantity });
     }
 
+    /// 取出物品，数量不足时返回错误
+    pub fn take(&mut self, item_type: ItemType, quantity: u32) -> Result<(), String> {
+        for i in 0..self.items.len() {
+            if self.items[i].item_type == item_type {
+                if self.items[i].quantity < quantity {
+                    return Err(format!("仓库中{}不足", item_type.name()));
+                }
+                self.items[i].quantity -= quantity;
+                if self.items[i].quantity == 0 {
+                    self.items.remove(i);
+                }
+                return Ok(());
+            }
+        }
+        Err(format!("仓库中没有{}", item_type.name()))
+    }
+
+    /// 文本摘要
     pub fn summary(&self) -> String {
         if self.items.is_empty() {
-            return "背包空空如也……".to_string();
+            return "仓库空空如也……".to_string();
         }
         let mut lines: Vec<String> = self.items
             .iter()

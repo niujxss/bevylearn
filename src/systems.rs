@@ -3,9 +3,11 @@ mod home;
 mod wordmap;
 mod searchenemy;
 mod war;
+mod warehouse;
 
 pub use menu::*;
 pub use home::*;
 pub use wordmap::*;
 pub use searchenemy::*;
 pub use war::*;
+pub use warehouse::*;

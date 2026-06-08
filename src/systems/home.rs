@@ -1,6 +1,7 @@
-use bevy::prelude::*;
 use crate::comp_data::*;
 use bevy::color::palettes::basic::*;
+use bevy::prelude::*;
+use super::warehouse::CangKuButton;
 
 #[derive(Component)]
 struct VollageUi;
@@ -266,9 +267,34 @@ pub fn create_home_ui(mut commands: Commands, asset: Res<AssetServer>, mut playe
                                 },
                                 TextColor(Color::srgb(0.9, 0.9, 0.9)), //文本颜色
                                 //TextShadow::default()  //字体阴影
-                                
+
                             )
                         ]
+                    ),
+                    (
+                        // 仓库
+                        CangKuButton,
+                        Button,
+                        Node {
+                            width: px(100),
+                            height: px(35),
+                            border: UiRect::all(px(5)),
+                            justify_content: JustifyContent::Center,
+                            align_items: AlignItems::Center,
+                            ..default()
+                        },
+                        BorderColor::all(Color::WHITE),
+                        BorderRadius::all(px(8.0)),
+                        BackgroundColor(Color::BLACK),
+                        children![(
+                            Text::new("仓库"),
+                            TextFont {
+                                font: asset.load("fonts/STKAITI.TTF"),
+                                font_size: 16.0,
+                                ..default()
+                            },
+                            TextColor(Color::srgb(0.9, 0.9, 0.9)),
+                        )]
                     ),
                 ],
             ),

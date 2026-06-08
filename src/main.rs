@@ -26,6 +26,11 @@ fn main() {
             check_recovery_button,
             check_chuji_button,
             check_beibao_button,
+            check_cangku_button,
+            close_warehouse,
+            handle_deposit,
+            handle_withdraw,
+            refresh_warehouse_system,
             ).run_if(in_state(Appstatus::Vollage)))
 
         .add_systems(OnEnter(Appstatus::WorldMap), create_wordmap)
