@@ -59,7 +59,7 @@ pub fn create_search_enemy_ui(mut commands: Commands, asset_server: Res<AssetSer
         },
         Transform::from_xyz(0.0, 0.0, 1.0),           // 屏幕坐标 (x,y,z)
         SpinningRing,
-        RingTimer(Timer::from_seconds(3.0, TimerMode::Once)),
+        RingTimer(Timer::from_seconds(1.0, TimerMode::Once)),
     ));
 
     commands.spawn((

@@ -643,7 +643,7 @@ pub fn check_result_button(
     for inter in interaction_query.iter() {
         if *inter == Interaction::Pressed {
             if battle_over.player_won {
-                next_status.set(Appstatus::WorldMap);
+                next_status.set(Appstatus::SearchEnemy);
             } else {
                 next_status.set(Appstatus::Vollage);
             }
