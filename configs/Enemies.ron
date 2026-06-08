@@ -4,7 +4,7 @@
         hp: 25,
         damage: 3,
         weight: 6,
-        image_path: None,
+        image_path: Some("XiuJiYeGou.png"),
         loot: [
             (item: ScrapIron, quantity: 2, probability: 1.0),
             (item: Leather, quantity: 1, probability: 0.3),

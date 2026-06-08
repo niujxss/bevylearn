@@ -184,8 +184,8 @@ pub fn create_battle_ui(
                             // 敌人形象（色块+emoji代替贴图）
                             (
                                 Node {
-                                    width: percent(70),
-                                    height: px(90),
+                                    width: percent(85),
+                                    height: percent(90),
                                     flex_direction: FlexDirection::Column,
                                     align_items: AlignItems::Center,
                                     justify_content: JustifyContent::Center,
@@ -286,7 +286,7 @@ pub fn create_battle_ui(
                             (
                                 Node {
                                     width: percent(85),
-                                    height: px(100),
+                                    height: percent(90),
                                     flex_direction: FlexDirection::Column,
                                     align_items: AlignItems::Center,
                                     justify_content: JustifyContent::Center,
