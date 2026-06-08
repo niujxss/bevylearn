@@ -558,23 +558,14 @@ pub fn check_battle_result(
                 for (item, qty) in &loot {
                     log.add(format!("掉落：{} × {}", item.name(), qty));
                 }
-                // 再入库
+                // 入库，背包满则丢弃
                 let loot_copy = loot.clone();
                 commands.queue(move |world: &mut World| {
                     let mut backpack = world.get_resource_or_insert_with(|| Backpack::new());
-                    // 收集需要存入仓库的溢出物品
-                    let mut overflow: Vec<(ItemType, u32)> = Vec::new();
                     for (item, qty) in &loot_copy {
-                        if let Err(_) = backpack.add(*item, *qty) {
-                            overflow.push((*item, *qty));
-                        }
-                    }
-                    // 此时 backpack 已释放对 world 的借用
-                    if !overflow.is_empty() {
-                        let mut warehouse =
-                            world.get_resource_or_insert_with(|| Warehouse::new());
-                        for (item, qty) in overflow {
-                            warehouse.store(item, qty);
+                        if let Err(msg) = backpack.add(*item, *qty) {
+                            // 背包满，直接丢弃
+                            let _ = msg;
                         }
                     }
                 });

@@ -283,6 +283,30 @@ impl ItemType {
             ItemType::BearPaw => "熊掌",
         }
     }
+
+    /// 用于 UI 显示的图标 emoji
+    pub fn icon(&self) -> &'static str {
+        match self {
+            ItemType::ScrapIron => "⚙️",
+            ItemType::Leather => "🧤",
+            ItemType::CopperWire => "🔌",
+            ItemType::DryBattery => "🔋",
+            ItemType::HighStrengthSpring => "🌀",
+            ItemType::BearPaw => "🐾",
+        }
+    }
+
+    /// 物品品质色 (0-金色, 1-蓝, 2-绿, 3-白)
+    pub fn rarity_color(&self) -> Color {
+        match self {
+            ItemType::BearPaw => Color::srgb(1.0, 0.84, 0.0),          // 金色
+            ItemType::HighStrengthSpring => Color::srgb(0.3, 0.6, 1.0), // 蓝色
+            ItemType::DryBattery => Color::srgb(0.3, 0.9, 0.4),         // 绿色
+            ItemType::CopperWire => Color::srgb(0.4, 0.8, 0.8),         // 青色
+            ItemType::Leather => Color::srgb(0.8, 0.6, 0.4),            // 棕色
+            ItemType::ScrapIron => Color::srgb(0.7, 0.7, 0.7),          // 灰色
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -310,13 +334,11 @@ impl Backpack {
         Self { items: Vec::new() }
     }
 
-    /// 添加物品。如果物品已存在则直接增加数量（不占新格）；
-    /// 如果是新物品且背包已满则返回错误。
+    /// 添加物品。每个数量单位占1格，总格子数不能超过上限。
     pub fn add(&mut self, item_type: ItemType, quantity: u32) -> Result<(), String> {
-        // 如果该物品类型已存在，不占新格
-        let exists = self.items.iter().any(|s| s.item_type == item_type);
-        if !exists && self.items.len() >= BACKPACK_MAX_SLOTS {
-            return Err(format!("背包已满，无法携带更多物品！"));
+        let total: u32 = self.items.iter().map(|s| s.quantity).sum();
+        if total + quantity > BACKPACK_MAX_SLOTS as u32 {
+            return Err(format!("背包已满（{}/{}）！", total, BACKPACK_MAX_SLOTS));
         }
         for stack in self.items.iter_mut() {
             if stack.item_type == item_type {
@@ -345,15 +367,15 @@ impl Backpack {
         Err(format!("背包中没有{}", item_type.name()))
     }
 
-    /// 背包当前占用的格数
+    /// 背包当前物品总数量（每个数量单位占1格）
     pub fn used_slots(&self) -> usize {
-        self.items.len()
+        self.items.iter().map(|s| s.quantity as usize).sum()
     }
 
-    /// 判断是否有空位容纳新物品类型
-    pub fn has_space_for(&self, item_type: ItemType) -> bool {
-        self.items.iter().any(|s| s.item_type == item_type)
-            || self.items.len() < BACKPACK_MAX_SLOTS
+    /// 判断是否有至少1个空位
+    pub fn has_space_for(&self, _item_type: ItemType) -> bool {
+        let total: u32 = self.items.iter().map(|s| s.quantity).sum();
+        (total as usize) < BACKPACK_MAX_SLOTS
     }
 
     /// 文本摘要 - 3列网格格式
