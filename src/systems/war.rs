@@ -56,82 +56,14 @@ pub struct BattleOver {
     pub over: bool,
 }
 
-// ============ 敌人模板 ============
+// ============ 创建战斗 UI ============
 
-use crate::comp_data::ItemType;
-
-struct LootEntry {
-    item: ItemType,
-    quantity: u32,
-    probability: f32, // 1.0 = 必定掉落
-}
-
-struct EnemyTemplate {
-    name: &'static str,
-    hp: i32,
-    damage: i32,
-    weight: u32,
-    loot: &'static [LootEntry],
-}
-
-const ENEMY_TEMPLATES: &[EnemyTemplate] = &[
-    EnemyTemplate {
-        name: "锈铁野狗",
-        hp: 25,
-        damage: 3,
-        weight: 6,
-        loot: &[
-            LootEntry { item: ItemType::ScrapIron, quantity: 2, probability: 1.0 },
-            LootEntry { item: ItemType::Leather, quantity: 1, probability: 0.3 },
-        ],
-    },
-    EnemyTemplate {
-        name: "拾荒机器人",
-        hp: 35,
-        damage: 5,
-        weight: 3,
-        loot: &[
-            LootEntry { item: ItemType::ScrapIron, quantity: 3, probability: 1.0 },
-            LootEntry { item: ItemType::CopperWire, quantity: 2, probability: 1.0 },
-            LootEntry { item: ItemType::DryBattery, quantity: 1, probability: 0.1 },
-        ],
-    },
-    EnemyTemplate {
-        name: "变异巨熊",
-        hp: 60,
-        damage: 8,
-        weight: 1,
-        loot: &[
-            LootEntry { item: ItemType::HighStrengthSpring, quantity: 3, probability: 1.0 },
-            LootEntry { item: ItemType::BearPaw, quantity: 1, probability: 1.0 },
-        ],
-    },
-];
-
-fn pick_enemy() -> &'static EnemyTemplate {
-    let total_weight: u32 = ENEMY_TEMPLATES.iter().map(|t| t.weight).sum();
-    let seed = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .unwrap()
-        .subsec_nanos() as u32;
-    let roll = seed % total_weight;
-    let mut cumulative = 0;
-    for t in ENEMY_TEMPLATES.iter() {
-        cumulative += t.weight;
-        if roll < cumulative {
-            return t;
-        }
-    }
-    &ENEMY_TEMPLATES[ENEMY_TEMPLATES.len() - 1]
-}
-
-fn roll_loot(template: &EnemyTemplate) -> Vec<(ItemType, u32)> {
+fn roll_loot(config: &EnemyConfig) -> Vec<(ItemType, u32)> {
     let now = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
         .unwrap();
     let mut results = Vec::new();
-    for (i, entry) in template.loot.iter().enumerate() {
-        // 用时间 + 索引生成种子，让每次 roll 不同
+    for (i, entry) in config.loot.iter().enumerate() {
         let seed = ((now.subsec_nanos() as u64).wrapping_add((i as u64) * 7919)) % 10000;
         let roll = seed as f32 / 10000.0;
         if roll < entry.probability {
@@ -141,24 +73,19 @@ fn roll_loot(template: &EnemyTemplate) -> Vec<(ItemType, u32)> {
     results
 }
 
-fn find_template(name: &str) -> Option<&'static EnemyTemplate> {
-    ENEMY_TEMPLATES.iter().find(|t| t.name == name)
-}
-
-// ============ 创建战斗 UI ============
-
 pub fn create_battle_ui(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
     player_query: Query<(&Player, &Cannon)>,
+    enemy_db: Res<EnemyDataBase>,
 ) {
     let (player, cannon) = player_query.single().unwrap();
-    let template = pick_enemy();
+    let template = enemy_db.pick_random();
     let enemy_name = &template.name;
     let enemy_hp = template.hp;
     let enemy_damage = template.damage;
 
-    // 初始化资源
+    // 加载敌人贴图（如果有配置的话）
     commands.insert_resource(BattleLog { messages: Vec::new() });
     commands.insert_resource(BattleOver { player_won: false, over: false });
 
@@ -358,8 +285,8 @@ pub fn create_battle_ui(
                             // 坦克图片
                             (
                                 Node {
-                                    width: percent(70),
-                                    height: px(90),
+                                    width: percent(85),
+                                    height: px(100),
                                     flex_direction: FlexDirection::Column,
                                     align_items: AlignItems::Center,
                                     justify_content: JustifyContent::Center,
@@ -372,8 +299,8 @@ pub fn create_battle_ui(
                                 children![
                                     (
                                         Node {
-                                            width: percent(80),
-                                            height: percent(80),
+                                            width: percent(90),
+                                            height: percent(90),
                                             ..default()
                                         },
                                         ImageNode::new(tank_img),
@@ -681,6 +608,7 @@ pub fn check_battle_result(
     battle_over: Res<BattleOver>,
     mut log: ResMut<BattleLog>,
     mut backpack: ResMut<Backpack>,
+    enemy_db: Res<EnemyDataBase>,
     enemy_query: Query<&Enemy>,
     fire_query: Query<Entity, With<FireButton>>,
     retreat_query: Query<Entity, With<RetreatButton>>,
@@ -701,7 +629,7 @@ pub fn check_battle_result(
     if battle_over.player_won {
         if let Ok(enemy_entity) = enemy_query.single() {
             let enemy = enemy_entity;
-            if let Some(template) = find_template(&enemy.name) {
+            if let Some(template) = enemy_db.find_by_name(&enemy.name) {
                 let loot = roll_loot(template);
                 for (item, qty) in &loot {
                     log.add(format!("掉落：{} × {}", item.name(), qty));

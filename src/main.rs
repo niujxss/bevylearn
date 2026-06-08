@@ -76,6 +76,9 @@ asset : Res<AssetServer>) {
 
     let db = EngineDataBase::load().unwrap();
     commands.insert_resource(db);
+
+    let db = EnemyDataBase::load().unwrap();
+    commands.insert_resource(db);
 }
 
 

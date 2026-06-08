@@ -262,7 +262,7 @@ impl EngineDataBase {
 
 // ============ 物品 & 背包系统 ============
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum ItemType {
     ScrapIron,            // 废铁
     Leather,              // 皮革
@@ -456,5 +456,63 @@ impl Warehouse {
             .map(|s| format!("{} × {}", s.item_type.name(), s.quantity))
             .collect();
         lines.join("\n")
+    }
+}
+
+// ============ 敌人配置系统 ============
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LootEntryConfig {
+    pub item: ItemType,
+    pub quantity: u32,
+    pub probability: f32,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct EnemyConfig {
+    pub name: String,
+    pub hp: i32,
+    pub damage: i32,
+    pub weight: u32,
+    pub image_path: Option<String>,
+    pub loot: Vec<LootEntryConfig>,
+}
+
+#[derive(Resource)]
+pub struct EnemyDataBase {
+    pub configs: Vec<EnemyConfig>,
+}
+
+impl EnemyDataBase {
+    pub fn load() -> Result<EnemyDataBase> {
+        let config_path = "configs/Enemies.ron";
+        let config_str = std::fs::read_to_string(config_path).unwrap();
+        let configs: Vec<EnemyConfig> = ron::from_str(&config_str).unwrap();
+        Ok(Self { configs })
+    }
+
+    pub fn pick_random(&self) -> &EnemyConfig {
+        let total_weight: u32 = self.configs.iter().map(|c| c.weight).sum();
+        if total_weight == 0 {
+            return &self.configs[0];
+        }
+        let seed = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .subsec_nanos() as u32;
+        let roll = seed % total_weight;
+        let mut cumulative = 0;
+        for config in self.configs.iter() {
+            cumulative += config.weight;
+            if roll < cumulative {
+                return config;
+            }
+        }
+        &self.configs[self.configs.len() - 1]
+    }
+
+    /// 按名称查找敌人配置
+    pub fn find_by_name(&self, name: &str) -> Option<&EnemyConfig> {
+        self.configs.iter().find(|c| c.name == name)
     }
 }
