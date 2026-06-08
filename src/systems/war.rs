@@ -174,6 +174,8 @@ pub fn create_battle_ui(
     ));
 
     let font = asset_server.load("fonts/STKAITI.TTF");
+    let tank_img = asset_server.load("tank.png");
+    let bg_img = asset_server.load("FeiTuHuangYuan_back.png");
 
     // ============ 根容器 ============
     commands.spawn((
@@ -184,191 +186,337 @@ pub fn create_battle_ui(
             width: percent(100),
             height: percent(100),
             flex_direction: FlexDirection::Column,
-            align_items: AlignItems::Center,
-            justify_content: JustifyContent::Center,
-            padding: UiRect::all(px(20.0)),
-            row_gap: px(10.0),
             ..default()
         },
-        BackgroundColor(Color::srgb(0.08, 0.08, 0.15)),
+        BackgroundColor(Color::srgb(0.05, 0.05, 0.12)),
         children![
-            // ===== 敌方区域 =====
+            // ===== 顶部背景层 =====
             (
                 Node {
-                    width: percent(90),
-                    height: percent(22),
-                    flex_direction: FlexDirection::Column,
-                    align_items: AlignItems::Center,
-                    justify_content: JustifyContent::Center,
-                    row_gap: px(6.0),
-                    ..default()
-                },
-                children![
-                    // 敌人名字
-                    (
-                        Text::new(format!("【{}】", enemy_name)),
-                        TextFont { font: font.clone(), font_size: 28.0, ..default() },
-                        TextColor(Color::srgb(1.0, 0.3, 0.3)),
-                    ),
-                    // HP条背景
-                    (
-                        Node {
-                            width: percent(100),
-                            height: px(22),
-                            border: UiRect::all(px(2)),
-                            ..default()
-                        },
-                        BorderColor::all(Color::WHITE),
-                        BackgroundColor(Color::srgb(0.3, 0.1, 0.1)),
-                        children![
-                            (
-                                Node {
-                                    width: percent(100),
-                                    height: percent(100),
-                                    ..default()
-                                },
-                                BackgroundColor(Color::srgb(0.9, 0.1, 0.1)),
-                                EnemyHpBarFill,
-                            ),
-                        ],
-                    ),
-                    // HP文字
-                    (
-                        Text::new(format!("HP: {}/{}", enemy_hp, enemy_hp)),
-                        TextFont { font: font.clone(), font_size: 16.0, ..default() },
-                        TextColor(Color::WHITE),
-                        EnemyHpText,
-                    ),
-                ],
-            ),
-            // ===== 战况区域 =====
-            (
-                Node {
-                    width: percent(90),
-                    height: percent(28),
-                    flex_direction: FlexDirection::Column,
-                    align_items: AlignItems::Center,
-                    justify_content: JustifyContent::Center,
-                    border: UiRect::all(px(1)),
-                    ..default()
-                },
-                BorderColor::all(Color::srgb(0.3, 0.3, 0.5)),
-                BackgroundColor(Color::srgb(0.10, 0.10, 0.18)),
-                children![
-                    (
-                        Text::new("战斗开始！"),
-                        TextFont { font: font.clone(), font_size: 20.0, ..default() },
-                        TextColor(Color::srgb(0.8, 0.8, 0.8)),
-                        BattleLogText,
-                        TextLayout::new_with_justify(Justify::Center),
-                    ),
-                ],
-            ),
-            // ===== 玩家区域 =====
-            (
-                Node {
-                    width: percent(90),
-                    height: percent(22),
-                    flex_direction: FlexDirection::Column,
-                    align_items: AlignItems::Center,
-                    justify_content: JustifyContent::Center,
-                    row_gap: px(6.0),
-                    ..default()
-                },
-                children![
-                    // 玩家名字 + 弹药
-                    (
-                        Text::new(format!("【你的战车】弹药: {}/{}", cannon.current_ammo, cannon.max_ammo)),
-                        TextFont { font: font.clone(), font_size: 22.0, ..default() },
-                        TextColor(Color::srgb(0.3, 0.8, 1.0)),
-                        PlayerAmmoText,
-                    ),
-                    // HP条背景
-                    (
-                        Node {
-                            width: percent(100),
-                            height: px(22),
-                            border: UiRect::all(px(2)),
-                            ..default()
-                        },
-                        BorderColor::all(Color::WHITE),
-                        BackgroundColor(Color::srgb(0.1, 0.2, 0.1)),
-                        children![
-                            (
-                                Node {
-                                    width: percent(100),
-                                    height: percent(100),
-                                    ..default()
-                                },
-                                BackgroundColor(Color::srgb(0.1, 0.8, 0.1)),
-                                PlayerHpBarFill,
-                            ),
-                        ],
-                    ),
-                    // HP文字
-                    (
-                        Text::new(format!("HP: {}/{}", player.health, player.max_health)),
-                        TextFont { font: font.clone(), font_size: 16.0, ..default() },
-                        TextColor(Color::WHITE),
-                        PlayerHpText,
-                    ),
-                ],
-            ),
-            // ===== 按钮区域 =====
-            (
-                Node {
-                    width: percent(90),
-                    height: percent(15),
+                    width: percent(100),
+                    height: percent(68),
                     flex_direction: FlexDirection::Row,
-                    justify_content: JustifyContent::Center,
+                    position_type: PositionType::Absolute,
+                    top: px(0.0),
+                    ..default()
+                },
+                ImageNode::new(bg_img.clone()),
+            ),
+            // ===== 对战主体区域 (flex row: 左敌人 右玩家) =====
+            (
+                Node {
+                    width: percent(100),
+                    height: percent(68),
+                    flex_direction: FlexDirection::Row,
                     align_items: AlignItems::Center,
-                    column_gap: px(40.0),
+                    justify_content: JustifyContent::Center,
+                    padding: UiRect::all(px(16.0)),
+                    column_gap: px(20.0),
                     ..default()
                 },
                 children![
-                    // 开火按钮
+                    // ---------- 左侧：敌方 ----------
                     (
-                        Button,
                         Node {
-                            width: px(160),
-                            height: px(50),
-                            border: UiRect::all(px(3)),
-                            justify_content: JustifyContent::Center,
+                            width: percent(45),
+                            height: percent(90),
+                            flex_direction: FlexDirection::Column,
                             align_items: AlignItems::Center,
+                            justify_content: JustifyContent::Center,
+                            border: UiRect::all(px(2)),
+                            row_gap: px(8.0),
                             ..default()
                         },
-                        BorderColor::all(Color::WHITE),
-                        BorderRadius::all(px(8.0)),
-                        BackgroundColor(Color::srgb(0.6, 0.1, 0.1)),
-                        FireButton,
+                        BorderColor::all(Color::srgb(0.6, 0.15, 0.15)),
+                        BorderRadius::all(px(10.0)),
+                        BackgroundColor(Color::srgb(0.08, 0.04, 0.10)),
                         children![
+                            // 敌人名字 + 等级框
                             (
-                                Text::new("开火"),
-                                TextFont { font: font.clone(), font_size: 28.0, ..default() },
-                                TextColor(Color::WHITE),
+                                Node {
+                                    width: percent(90),
+                                    flex_direction: FlexDirection::Row,
+                                    justify_content: JustifyContent::Center,
+                                    align_items: AlignItems::Center,
+                                    column_gap: px(8.0),
+                                    ..default()
+                                },
+                                children![
+                                    (
+                                        Text::new("👾"),
+                                        TextFont { font: font.clone(), font_size: 22.0, ..default() },
+                                        TextColor(Color::srgb(1.0, 1.0, 1.0)),
+                                    ),
+                                    (
+                                        Text::new(format!("【{}】", enemy_name)),
+                                        TextFont { font: font.clone(), font_size: 24.0, ..default() },
+                                        TextColor(Color::srgb(1.0, 0.4, 0.3)),
+                                    ),
+                                ],
+                            ),
+                            // 敌人形象（色块+emoji代替贴图）
+                            (
+                                Node {
+                                    width: percent(70),
+                                    height: px(90),
+                                    flex_direction: FlexDirection::Column,
+                                    align_items: AlignItems::Center,
+                                    justify_content: JustifyContent::Center,
+                                    border: UiRect::all(px(1)),
+                                    ..default()
+                                },
+                                BorderColor::all(Color::srgb(0.4, 0.1, 0.1)),
+                                BorderRadius::all(px(8.0)),
+                                BackgroundColor(Color::srgb(0.15, 0.05, 0.08)),
+                                children![
+                                    (
+                                        Text::new("💀"),
+                                        TextFont { font: font.clone(), font_size: 48.0, ..default() },
+                                        TextColor(Color::srgb(1.0, 0.3, 0.2)),
+                                    ),
+                                ],
+                            ),
+                            // 敌人 HP 条
+                            (
+                                Node {
+                                    width: percent(85),
+                                    height: px(20),
+                                    flex_direction: FlexDirection::Column,
+                                    ..default()
+                                },
+                                children![
+                                    (
+                                        Node {
+                                            width: percent(100),
+                                            height: px(16),
+                                            border: UiRect::all(px(1)),
+                                            ..default()
+                                        },
+                                        BorderColor::all(Color::srgb(0.5, 0.2, 0.2)),
+                                        BackgroundColor(Color::srgb(0.2, 0.05, 0.05)),
+                                        children![
+                                            (
+                                                Node {
+                                                    width: percent(100),
+                                                    height: percent(100),
+                                                    ..default()
+                                                },
+                                                BackgroundColor(Color::srgb(0.9, 0.15, 0.15)),
+                                                EnemyHpBarFill,
+                                            ),
+                                        ],
+                                    ),
+                                    (
+                                        Text::new(format!("HP: {}/{}", enemy_hp, enemy_hp)),
+                                        TextFont { font: font.clone(), font_size: 14.0, ..default() },
+                                        TextColor(Color::srgb(1.0, 0.6, 0.6)),
+                                        EnemyHpText,
+                                    ),
+                                ],
                             ),
                         ],
                     ),
-                    // 撤退按钮
+                    // ---------- 右侧：玩家 ----------
                     (
-                        Button,
                         Node {
-                            width: px(160),
-                            height: px(50),
-                            border: UiRect::all(px(3)),
-                            justify_content: JustifyContent::Center,
+                            width: percent(45),
+                            height: percent(90),
+                            flex_direction: FlexDirection::Column,
                             align_items: AlignItems::Center,
+                            justify_content: JustifyContent::Center,
+                            border: UiRect::all(px(2)),
+                            row_gap: px(8.0),
                             ..default()
                         },
-                        BorderColor::all(Color::WHITE),
-                        BorderRadius::all(px(8.0)),
-                        BackgroundColor(Color::srgb(0.3, 0.3, 0.3)),
-                        RetreatButton,
+                        BorderColor::all(Color::srgb(0.15, 0.5, 0.7)),
+                        BorderRadius::all(px(10.0)),
+                        BackgroundColor(Color::srgb(0.04, 0.08, 0.12)),
+                        children![
+                            // 玩家名字 + 弹药
+                            (
+                                Node {
+                                    width: percent(90),
+                                    flex_direction: FlexDirection::Row,
+                                    justify_content: JustifyContent::Center,
+                                    align_items: AlignItems::Center,
+                                    column_gap: px(8.0),
+                                    ..default()
+                                },
+                                children![
+                                    (
+                                        Text::new("⚔️"),
+                                        TextFont { font: font.clone(), font_size: 22.0, ..default() },
+                                        TextColor(Color::srgb(1.0, 1.0, 1.0)),
+                                    ),
+                                    (
+                                        Text::new("你的战车"),
+                                        TextFont { font: font.clone(), font_size: 24.0, ..default() },
+                                        TextColor(Color::srgb(0.3, 0.85, 1.0)),
+                                    ),
+                                ],
+                            ),
+                            // 坦克图片
+                            (
+                                Node {
+                                    width: percent(70),
+                                    height: px(90),
+                                    flex_direction: FlexDirection::Column,
+                                    align_items: AlignItems::Center,
+                                    justify_content: JustifyContent::Center,
+                                    border: UiRect::all(px(1)),
+                                    ..default()
+                                },
+                                BorderColor::all(Color::srgb(0.15, 0.4, 0.5)),
+                                BorderRadius::all(px(8.0)),
+                                BackgroundColor(Color::srgb(0.06, 0.10, 0.15)),
+                                children![
+                                    (
+                                        Node {
+                                            width: percent(80),
+                                            height: percent(80),
+                                            ..default()
+                                        },
+                                        ImageNode::new(tank_img),
+                                    ),
+                                ],
+                            ),
+                            // 玩家 HP 条
+                            (
+                                Node {
+                                    width: percent(85),
+                                    height: px(20),
+                                    flex_direction: FlexDirection::Column,
+                                    ..default()
+                                },
+                                children![
+                                    (
+                                        Node {
+                                            width: percent(100),
+                                            height: px(16),
+                                            border: UiRect::all(px(1)),
+                                            ..default()
+                                        },
+                                        BorderColor::all(Color::srgb(0.2, 0.5, 0.2)),
+                                        BackgroundColor(Color::srgb(0.05, 0.15, 0.05)),
+                                        children![
+                                            (
+                                                Node {
+                                                    width: percent(100),
+                                                    height: percent(100),
+                                                    ..default()
+                                                },
+                                                BackgroundColor(Color::srgb(0.15, 0.85, 0.15)),
+                                                PlayerHpBarFill,
+                                            ),
+                                        ],
+                                    ),
+                                    (
+                                        Text::new(format!("HP: {}/{}  弹药: {}/{}", player.health, player.max_health, cannon.current_ammo, cannon.max_ammo)),
+                                        TextFont { font: font.clone(), font_size: 14.0, ..default() },
+                                        TextColor(Color::srgb(0.6, 1.0, 0.6)),
+                                        PlayerHpText,
+                                    ),
+                                ],
+                            ),
+                        ],
+                    ),
+                ],
+            ),
+            // ===== 底部区域 =====
+            (
+                Node {
+                    width: percent(100),
+                    height: percent(32),
+                    position_type: PositionType::Absolute,
+                    bottom: px(0),
+                    flex_direction: FlexDirection::Row,
+                    ..default()
+                },
+                BackgroundColor(Color::srgb(0.06, 0.06, 0.14)),
+                BorderColor::all(Color::srgb(0.2, 0.2, 0.3)),
+                children![
+                    // ===== 底部左侧：按钮 =====
+                    (
+                        Node {
+                            width: percent(45),
+                            height: percent(100),
+                            flex_direction: FlexDirection::Column,
+                            align_items: AlignItems::Center,
+                            justify_content: JustifyContent::Center,
+                            row_gap: px(16.0),
+                            padding: UiRect::all(px(10.0)),
+                            ..default()
+                        },
+                        children![
+                            // 开火按钮
+                            (
+                                Button,
+                                Node {
+                                    width: px(180),
+                                    height: px(50),
+                                    border: UiRect::all(px(3)),
+                                    justify_content: JustifyContent::Center,
+                                    align_items: AlignItems::Center,
+                                    ..default()
+                                },
+                                BorderColor::all(Color::srgb(0.8, 0.2, 0.2)),
+                                BorderRadius::all(px(8.0)),
+                                BackgroundColor(Color::srgb(0.5, 0.08, 0.08)),
+                                FireButton,
+                                children![(
+                                    Text::new("🔥 开火"),
+                                    TextFont { font: font.clone(), font_size: 26.0, ..default() },
+                                    TextColor(Color::srgb(1.0, 0.8, 0.8)),
+                                )],
+                            ),
+                            // 撤退按钮
+                            (
+                                Button,
+                                Node {
+                                    width: px(180),
+                                    height: px(50),
+                                    border: UiRect::all(px(3)),
+                                    justify_content: JustifyContent::Center,
+                                    align_items: AlignItems::Center,
+                                    ..default()
+                                },
+                                BorderColor::all(Color::srgb(0.4, 0.4, 0.5)),
+                                BorderRadius::all(px(8.0)),
+                                BackgroundColor(Color::srgb(0.2, 0.2, 0.25)),
+                                RetreatButton,
+                                children![(
+                                    Text::new("🏃 撤退"),
+                                    TextFont { font: font.clone(), font_size: 26.0, ..default() },
+                                    TextColor(Color::srgb(0.8, 0.8, 0.9)),
+                                )],
+                            ),
+                        ],
+                    ),
+                    // ===== 底部右侧：战况 =====
+                    (
+                        Node {
+                            width: percent(55),
+                            height: percent(100),
+                            flex_direction: FlexDirection::Column,
+                            align_items: AlignItems::Center,
+                            justify_content: JustifyContent::Center,
+                            border: UiRect::left(px(1)),
+                            padding: UiRect::all(px(10.0)),
+                            ..default()
+                        },
+                        BorderColor::all(Color::srgb(0.2, 0.2, 0.3)),
                         children![
                             (
-                                Text::new("撤退"),
-                                TextFont { font: font.clone(), font_size: 28.0, ..default() },
-                                TextColor(Color::WHITE),
+                                Text::new("📋 战况"),
+                                TextFont { font: font.clone(), font_size: 20.0, ..default() },
+                                TextColor(Color::srgb(0.8, 0.8, 0.5)),
+                            ),
+                            (
+                                Text::new("战斗开始！"),
+                                TextFont { font: font.clone(), font_size: 18.0, ..default() },
+                                TextColor(Color::srgb(0.8, 0.8, 0.8)),
+                                BattleLogText,
+                                TextLayout::new_with_justify(Justify::Center),
                             ),
                         ],
                     ),
