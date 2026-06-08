@@ -532,6 +532,7 @@ pub fn check_battle_result(
     mut commands: Commands,
     battle_over: Res<BattleOver>,
     mut log: ResMut<BattleLog>,
+    mut backpack: ResMut<Backpack>,
     enemy_query: Query<&Enemy>,
     fire_query: Query<Entity, With<FireButton>>,
     retreat_query: Query<Entity, With<RetreatButton>>,
@@ -554,21 +555,14 @@ pub fn check_battle_result(
             let enemy = enemy_entity;
             if let Some(template) = find_template(&enemy.name) {
                 let loot = roll_loot(template);
-                // 先显示掉落消息到日志
                 for (item, qty) in &loot {
                     log.add(format!("掉落：{} × {}", item.name(), qty));
                 }
-                // 入库，背包满则丢弃
-                let loot_copy = loot.clone();
-                commands.queue(move |world: &mut World| {
-                    let mut backpack = world.get_resource_or_insert_with(|| Backpack::new());
-                    for (item, qty) in &loot_copy {
-                        if let Err(msg) = backpack.add(*item, *qty) {
-                            // 背包满，直接丢弃
-                            let _ = msg;
-                        }
+                for (item, qty) in &loot {
+                    if let Err(_) = backpack.add(*item, *qty) {
+                        log.add(format!("⚠️ 背包已满，{} 被丢弃了！", item.name()));
                     }
-                });
+                }
             }
         }
     }
