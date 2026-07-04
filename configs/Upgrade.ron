@@ -1,0 +1,53 @@
+// 升级配置
+// level：达到该等级所需的经验值和材料
+// 例：level=2 表示从 Lv.1 升到 Lv.2 需要 10 经验和 废铁×3
+{
+    levels: [
+        (
+            level: 2,
+            exp_needed: 10,
+            cost: [
+                (ScrapIron, 3),
+            ],
+        ),
+        (
+            level: 3,
+            exp_needed: 100,
+            cost: [
+                (ScrapIron, 5),
+                (Leather, 2),
+            ],
+        ),
+        (
+            level: 4,
+            exp_needed: 1000,
+            cost: [
+                (ScrapIron, 8),
+                (Leather, 5),
+                (CopperWire, 3),
+            ],
+        ),
+        (
+            level: 5,
+            exp_needed: 10000,
+            cost: [
+                (ScrapIron, 12),
+                (Leather, 8),
+                (CopperWire, 5),
+                (DryBattery, 3),
+            ],
+        ),
+        (
+            level: 6,
+            exp_needed: 100000,
+            cost: [
+                (ScrapIron, 18),
+                (Leather, 12),
+                (CopperWire, 8),
+                (DryBattery, 5),
+                (HighStrengthSpring, 2),
+            ],
+        ),
+    ],
+    max_level: 6,
+}

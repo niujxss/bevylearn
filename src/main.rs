@@ -25,7 +25,6 @@ fn main() {
             check_zhuangbei_button,
             check_recovery_button,
             check_update_button,
-            check_update_button_confirm,
             check_chuji_button,
             check_beibao_button,
             check_cangku_button,
@@ -59,6 +58,14 @@ fn main() {
                 check_battle_result,
                 check_result_button,
             ).run_if(in_state(Appstatus::War)))
+
+        .add_systems(OnEnter(Appstatus::Upgrade), create_upgrade_ui)
+        .add_systems(Update, (
+                update_upgrade_display,
+                check_upgrade_button,
+                check_upgrade_back_button,
+            ).run_if(in_state(Appstatus::Upgrade)))
+
         .run();
 
 }
@@ -80,6 +87,9 @@ asset : Res<AssetServer>) {
     commands.insert_resource(db);
 
     let db = EnemyDataBase::load().unwrap();
+    commands.insert_resource(db);
+
+    let db = UpgradeDataBase::load().unwrap();
     commands.insert_resource(db);
 }
 

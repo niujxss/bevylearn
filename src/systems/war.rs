@@ -661,10 +661,9 @@ pub fn check_battle_result(
                 let exp_gain = (template.weight * 10 + template.hp as u32 * 2) as u32;
                 player_level.gain_exp(exp_gain);
                 log.add(format!(
-                    "✨ 获得 {} 经验值！（当前 {}/{} 可升级）",
+                    "✨ 获得 {} 经验值！（当前 {}）",
                     exp_gain,
                     player_level.exp,
-                    player_level.exp_to_next()
                 ));
             }
         }

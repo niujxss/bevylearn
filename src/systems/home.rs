@@ -459,11 +459,8 @@ pub fn check_beibao_button(
     }
 }
 
-//升级 - 显示详细信息（背包 + 仓库材料对比）
+//升级 - 跳转到独立升级界面
 pub fn check_update_button(
-    player_level: Res<PlayerLevel>,
-    backpack: Option<Res<Backpack>>,
-    warehouse: Option<Res<Warehouse>>,
     mut interaction_query: Query<
         (&Interaction, &mut BorderColor),
         (
@@ -472,76 +469,13 @@ pub fn check_update_button(
             Without<RecoveryButton>,
         ),
     >,
-    mut text: Query<&mut Text, With<VollageMessage>>,
+    mut next_status: ResMut<NextState<Appstatus>>,
 ) {
     if let Ok((inter, mut border_color)) = interaction_query.single_mut() {
         match inter {
             Interaction::Pressed => {
                 border_color.set_all(AQUA);
-                if let Ok(mut t) = text.single_mut() {
-                    if player_level.is_max_level() {
-                        t.0 = "⚠️ 已达最高等级 Lv.10！".to_string();
-                        return;
-                    }
-
-                    let cost = PlayerLevel::upgrade_cost();
-
-                    // 统计背包 + 仓库的持有情况
-                    let empty_vec = Vec::new();
-                    let bp = backpack.as_ref().map(|b| &b.items).unwrap_or(&empty_vec);
-                    let wh = warehouse.as_ref().map(|w| &w.items).unwrap_or(&empty_vec);
-
-                    let mut cost_lines = String::new();
-                    let mut all_met = true;
-                    for (item, need_qty) in &cost {
-                        let bp_qty = bp.iter()
-                            .find(|s| s.item_type == *item)
-                            .map(|s| s.quantity)
-                            .unwrap_or(0);
-                        let wh_qty = wh.iter()
-                            .find(|s| s.item_type == *item)
-                            .map(|s| s.quantity)
-                            .unwrap_or(0);
-                        let total = bp_qty + wh_qty;
-                        let mark = if total >= *need_qty { "✅" } else { "❌" };
-                        cost_lines += &format!(
-                            "  {} {}  背包{} + 仓库{} / 需要{}\n",
-                            mark, item.name(), bp_qty, wh_qty, need_qty
-                        );
-                        if total < *need_qty {
-                            all_met = false;
-                        }
-                    }
-
-                    let exp_ok = player_level.has_enough_exp();
-                    let exp_mark = if exp_ok { "✅" } else { "❌" };
-
-                    t.0 = format!(
-                        "=== 🛠 升级系统 ===\n\
-                         Lv.{} → Lv.{}   攻击 {:+.0}% → {:+.0}%\n\
-                         {} 经验  {}/{}  (需击败敌人获得)\n\
-                         \n\
-                         所需材料：\n{}{}\
-                         \n点击再次确认升级",
-                        player_level.level,
-                        player_level.level + 1,
-                        (player_level.attack_multiplier() - 1.0) * 100.0,
-                        (player_level.attack_multiplier() - 1.0) * 100.0 + 10.0,
-                        exp_mark,
-                        player_level.exp,
-                        player_level.exp_to_next(),
-                        cost_lines,
-                        if all_met && exp_ok {
-                            ""
-                        } else if !all_met && !exp_ok {
-                            "\n⚠️ 经验不足，且材料不足！"
-                        } else if !all_met {
-                            "\n⚠️ 材料不足！先去战斗收集吧"
-                        } else {
-                            "\n⚠️ 经验不足！先出击战斗吧"
-                        },
-                    );
-                }
+                next_status.set(Appstatus::Upgrade);
             }
             Interaction::Hovered => {
                 border_color.set_all(OLIVE);
@@ -549,120 +483,6 @@ pub fn check_update_button(
             Interaction::None => {
                 border_color.set_all(WHITE);
             }
-        }
-    }
-}
-
-//升级确认 - 消耗背包+仓库材料，提升等级
-pub fn check_update_button_confirm(
-    mut player_level: ResMut<PlayerLevel>,
-    mut backpack: ResMut<Backpack>,
-    mut warehouse: ResMut<Warehouse>,
-    mut interaction_query: Query<
-        (&Interaction, &mut BackgroundColor),
-        (
-            Changed<Interaction>,
-            With<UpdateButton>,
-            Without<RecoveryButton>,
-        ),
-    >,
-    mut text: Query<&mut Text, With<VollageMessage>>,
-) {
-    if let Ok((inter, _bg)) = interaction_query.single_mut() {
-        if *inter != Interaction::Pressed {
-            return;
-        }
-        // 只在信息窗口显示升级面板时响应（二次确认）
-        let msg = text.single().map(|t| t.0.clone()).unwrap_or_default();
-        if !msg.contains("点击再次确认升级") {
-            return;
-        }
-
-        if player_level.is_max_level() {
-            if let Ok(mut t) = text.single_mut() {
-                t.0 = "⚠️ 已达最高等级 Lv.10！".to_string();
-            }
-            return;
-        }
-
-        // 检查经验
-        if !player_level.has_enough_exp() {
-            if let Ok(mut t) = text.single_mut() {
-                t.0 = format!(
-                    "❌ 经验不足！（{}/{}）先去战斗积累经验吧！",
-                    player_level.exp,
-                    player_level.exp_to_next()
-                );
-            }
-            return;
-        }
-
-        // 检查材料：背包+仓库合并
-        let cost = PlayerLevel::upgrade_cost();
-        for (item, need_qty) in &cost {
-            let bp_qty = backpack
-                .items
-                .iter()
-                .find(|s| s.item_type == *item)
-                .map(|s| s.quantity)
-                .unwrap_or(0);
-            let wh_qty = warehouse
-                .items
-                .iter()
-                .find(|s| s.item_type == *item)
-                .map(|s| s.quantity)
-                .unwrap_or(0);
-            if bp_qty + wh_qty < *need_qty {
-                if let Ok(mut t) = text.single_mut() {
-                    t.0 = format!(
-                        "❌ 材料不足！{} 需要 {}，背包+仓库共 {}",
-                        item.name(),
-                        need_qty,
-                        bp_qty + wh_qty
-                    );
-                }
-                return;
-            }
-        }
-
-        // 消耗材料：先扣背包，再扣仓库
-        for (item, need_qty) in &cost {
-            let mut remaining = *need_qty;
-
-            // 扣背包
-            let bp_qty = backpack
-                .items
-                .iter()
-                .find(|s| s.item_type == *item)
-                .map(|s| s.quantity)
-                .unwrap_or(0);
-            let take_from_bp = bp_qty.min(remaining);
-            if take_from_bp > 0 {
-                let _ = backpack.remove(*item, take_from_bp);
-                remaining -= take_from_bp;
-            }
-
-            // 扣仓库
-            if remaining > 0 {
-                let _ = warehouse.take(*item, remaining);
-            }
-        }
-
-        // 扣除升级所需经验
-        player_level.exp -= player_level.exp_to_next();
-        player_level.level += 1;
-
-        if let Ok(mut t) = text.single_mut() {
-            t.0 = format!(
-                "✅ 升级成功！Lv.{} → Lv.{}\n\
-                 攻击加成：{:.0}%\n\
-                 下一级需经验：{}\n\
-                 下一级需材料：废铁×3、皮革×2、铜线×1",
-                player_level.level - 1,
-                player_level.level,
-                (player_level.attack_multiplier() - 1.0) * 100.0,
-                player_level.exp_to_next(),
-            );
         }
     }
 }

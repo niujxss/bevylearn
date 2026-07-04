@@ -117,13 +117,14 @@ pub struct Engine {
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash, States)]
 pub enum Appstatus {
-    #[default] // 标记默认状态是 Setup
+    #[default]
     Menu,
     Game,
     Vollage,
     WorldMap,
     SearchEnemy,
     War,
+    Upgrade,
 }
 
 
@@ -261,6 +262,47 @@ impl EngineDataBase {
     }
 }
 
+// ============ 升级经验/材料配置 ============
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct UpgradeLevelConfig {
+    /// 目标等级（例如 level: 2 表示从 Lv.1→Lv.2 的升级配置）
+    pub level: u32,
+    /// 需要积累的经验值
+    pub exp_needed: u32,
+    /// 需要消耗的材料列表
+    pub cost: Vec<(ItemType, u32)>,
+}
+
+#[derive(Resource)]
+pub struct UpgradeDataBase {
+    pub configs: Vec<UpgradeLevelConfig>,
+    pub max_level: u32,
+}
+
+impl UpgradeDataBase {
+    pub fn load() -> Result<UpgradeDataBase> {
+        let config_path = "configs/Upgrade.ron";
+        let config_str = std::fs::read_to_string(config_path).unwrap();
+        let raw: RawUpgradeData = ron::from_str(&config_str).unwrap();
+        Ok(Self {
+            configs: raw.levels,
+            max_level: raw.max_level,
+        })
+    }
+
+    /// 查找某个等级的升级配置
+    pub fn for_level(&self, level: u32) -> Option<&UpgradeLevelConfig> {
+        self.configs.iter().find(|c| c.level == level)
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct RawUpgradeData {
+    levels: Vec<UpgradeLevelConfig>,
+    max_level: u32,
+}
+
 // ============ 等级 / 升级系统 ============
 
 #[derive(Resource, Debug, Clone)]
@@ -279,34 +321,9 @@ impl PlayerLevel {
         1.0 + (self.level as f32 - 1.0) * 0.1
     }
 
-    /// 升到下一级需要的总经验（逐级递增）
-    pub fn exp_to_next(&self) -> u32 {
-        100 + (self.level - 1) * 50
-    }
-
-    /// 积累经验值（仅累加，不自动升级——升级需在基地消耗材料手动操作）
+    /// 积累经验值（仅累加，不自动升级）
     pub fn gain_exp(&mut self, amount: u32) {
         self.exp += amount;
-    }
-
-    /// 判断是否有足够经验进行下一次升级
-    pub fn has_enough_exp(&self) -> bool {
-        self.exp >= self.exp_to_next()
-    }
-
-    /// 判断是否已达最高等级
-    pub fn is_max_level(&self) -> bool {
-        self.level >= 10
-    }
-
-    /// 当前等级的升级成本（需要消耗的材料）
-    pub fn upgrade_cost() -> Vec<(ItemType, u32)> {
-        // 固定成本，可按等级进行变化
-        vec![
-            (ItemType::ScrapIron, 3),
-            (ItemType::Leather, 2),
-            (ItemType::CopperWire, 1),
-        ]
     }
 }
 
