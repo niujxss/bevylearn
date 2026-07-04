@@ -523,6 +523,7 @@ pub fn check_fire_button(
     mut enemy_query: Query<&mut Enemy>,
     mut log: ResMut<BattleLog>,
     mut battle_over: ResMut<BattleOver>,
+    player_level: Res<PlayerLevel>,
     mut fire_query: Query<
         (&Interaction, &mut BackgroundColor),
         (Changed<Interaction>, With<FireButton>),
@@ -546,10 +547,16 @@ pub fn check_fire_button(
                     return;
                 }
 
-                let damage = cannon.damage;
+                let base_damage = cannon.damage;
+                // 等级攻击加成：基础伤害 × 加成倍率
+                let multiplier = player_level.attack_multiplier();
+                let damage = (base_damage as f32 * multiplier).round() as u32;
                 cannon.current_ammo -= 1;
                 enemy.hp -= damage as i32;
-                log.add(format!("开火！【{}】造成 {} 点伤害！", cannon.name, damage));
+                log.add(format!(
+                    "开火！【{}】造成 {} 点伤害！(Lv.{} x{:.0}%加成)",
+                    cannon.name, damage, player_level.level, (multiplier - 1.0) * 100.0
+                ));
 
                 if enemy.hp <= 0 {
                     enemy.hp = 0;
@@ -616,6 +623,7 @@ pub fn check_battle_result(
     battle_over: Res<BattleOver>,
     mut log: ResMut<BattleLog>,
     mut backpack: ResMut<Backpack>,
+    mut player_level: ResMut<PlayerLevel>,
     enemy_db: Res<EnemyDataBase>,
     enemy_query: Query<&Enemy>,
     fire_query: Query<Entity, With<FireButton>>,
@@ -633,11 +641,12 @@ pub fn check_battle_result(
         return;
     }
 
-    // 战斗胜利时发放战利品
+    // 战斗胜利时发放战利品和经验
     if battle_over.player_won {
         if let Ok(enemy_entity) = enemy_query.single() {
             let enemy = enemy_entity;
             if let Some(template) = enemy_db.find_by_name(&enemy.name) {
+                // 战利品掉落
                 let loot = roll_loot(template);
                 for (item, qty) in &loot {
                     log.add(format!("掉落：{} × {}", item.name(), qty));
@@ -646,6 +655,17 @@ pub fn check_battle_result(
                     if let Err(_) = backpack.add(*item, *qty) {
                         log.add(format!("⚠️ 背包已满，{} 被丢弃了！", item.name()));
                     }
+                }
+                // 经验奖励（基于敌人权重和HP）
+                let exp_gain = (template.weight * 10 + template.hp as u32 * 2) as u32;
+                let leveled_up = player_level.gain_exp(exp_gain);
+                log.add(format!("✨ 获得 {} 经验值！", exp_gain));
+                if leveled_up {
+                    log.add(format!(
+                        "🎉 升级！当前等级 Lv.{}，攻击加成 {:.0}%",
+                        player_level.level,
+                        (player_level.attack_multiplier() - 1.0) * 100.0
+                    ));
                 }
             }
         }

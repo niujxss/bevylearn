@@ -260,6 +260,53 @@ impl EngineDataBase {
     }
 }
 
+// ============ 等级 / 升级系统 ============
+
+#[derive(Resource, Debug, Clone)]
+pub struct PlayerLevel {
+    pub level: u32,
+    pub exp: u32,
+}
+
+impl PlayerLevel {
+    pub fn new() -> Self {
+        Self { level: 1, exp: 0 }
+    }
+
+    /// 当前等级的攻击加成倍率（每级 +10%，等级 1 为 1.0x）
+    pub fn attack_multiplier(&self) -> f32 {
+        1.0 + (self.level as f32 - 1.0) * 0.1
+    }
+
+    /// 升到下一级需要的总经验（逐级递增）
+    pub fn exp_to_next(&self) -> u32 {
+        100 + (self.level - 1) * 50
+    }
+
+    /// 尝试增加经验，返回是否升级了
+    pub fn gain_exp(&mut self, amount: u32) -> bool {
+        self.exp += amount;
+        let needed = self.exp_to_next();
+        if self.exp >= needed {
+            self.exp -= needed;
+            self.level += 1;
+            true
+        } else {
+            false
+        }
+    }
+
+    /// 当前等级的升级成本
+    pub fn upgrade_cost() -> Vec<(ItemType, u32)> {
+        // 固定成本，可按等级进行变化
+        vec![
+            (ItemType::ScrapIron, 3),
+            (ItemType::Leather, 2),
+            (ItemType::CopperWire, 1),
+        ]
+    }
+}
+
 // ============ 物品 & 背包系统 ============
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]

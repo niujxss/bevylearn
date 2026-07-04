@@ -13,7 +13,7 @@ struct MiscUi;
 pub struct ChuJiButton;
 
 #[derive(Component)]
-struct UpdateButton;
+pub struct UpdateButton;
 
 #[derive(Component)]
 pub struct RecoveryButton;
@@ -454,6 +454,109 @@ pub fn check_beibao_button(
             }
             Interaction::None => {
                 border_color.set_all(WHITE);
+            }
+        }
+    }
+}
+
+//升级
+pub fn check_update_button(
+    mut player_level: ResMut<PlayerLevel>,
+    mut backpack: ResMut<Backpack>,
+    mut interaction_query: Query<(&Interaction, &mut BorderColor), (Changed<Interaction>, With<UpdateButton>, Without<RecoveryButton>)>,
+    mut text: Query<&mut Text, With<VollageMessage>>
+) {
+    if let Ok((inter, mut border_color)) = interaction_query.single_mut() {
+        match inter {
+            Interaction::Pressed => {
+                border_color.set_all(AQUA);
+                if let Ok(mut t) = text.single_mut() {
+                    // 显示当前等级和升级信息
+                    let cost = PlayerLevel::upgrade_cost();
+                    let mut cost_str = String::new();
+                    for (item, qty) in &cost {
+                        cost_str += &format!("{} × {}\n", item.name(), qty);
+                    }
+                    t.0 = format!(
+                        "=== 升级系统 ===\n\
+                         当前等级：Lv.{}\n\
+                         经验：{}/{}\n\
+                         攻击加成：{:.0}%\n\
+                         \n\
+                         升级所需材料：\n{}{}\
+                         \n点击再次确认升级",
+                        player_level.level,
+                        player_level.exp,
+                        player_level.exp_to_next(),
+                        (player_level.attack_multiplier() - 1.0) * 100.0,
+                        cost_str,
+                        if player_level.level >= 10 { "\n⚠️ 已达最高等级！" } else { "" }
+                    );
+                }
+            }
+            Interaction::Hovered => {
+                border_color.set_all(OLIVE);
+            }
+            Interaction::None => {
+                border_color.set_all(WHITE);
+            }
+        }
+    }
+}
+
+//连续点击升级按钮第二次确认升级
+pub fn check_update_button_confirm(
+    mut player_level: ResMut<PlayerLevel>,
+    mut backpack: ResMut<Backpack>,
+    mut interaction_query: Query<(&Interaction, &mut BackgroundColor), (Changed<Interaction>, With<UpdateButton>, Without<RecoveryButton>)>,
+    mut text: Query<&mut Text, With<VollageMessage>>
+) {
+    if let Ok((inter, mut bg)) = interaction_query.single_mut() {
+        if *inter != Interaction::Pressed {
+            return;
+        }
+        // 只处理连续两次点击后的第二次——检查是否已经有升级确认文本
+        let msg = text.single().map(|t| t.0.clone()).unwrap_or_default();
+        if !msg.contains("点击再次确认升级") {
+            return; // 不是第二次点击
+        }
+
+        if player_level.level >= 10 {
+            if let Ok(mut t) = text.single_mut() {
+                t.0 = "已达最高等级 Lv.10！".to_string();
+            }
+            return;
+        }
+
+        // 检查材料是否足够
+        let cost = PlayerLevel::upgrade_cost();
+        let mut can_upgrade = true;
+        for (item, qty) in &cost {
+            let has_enough = backpack.items.iter().any(|s| s.item_type == *item && s.quantity >= *qty);
+            if !has_enough {
+                can_upgrade = false;
+                if let Ok(mut t) = text.single_mut() {
+                    t.0 = format!("❌ {}不足，无法升级！", item.name());
+                }
+                break;
+            }
+        }
+
+        if can_upgrade {
+            // 消耗材料
+            for (item, qty) in &cost {
+                let _ = backpack.remove(*item, *qty);
+            }
+            player_level.level += 1;
+            if let Ok(mut t) = text.single_mut() {
+                t.0 = format!(
+                    "✅ 升级成功！当前等级 Lv.{}\n\
+                     攻击加成：{:.0}%\n\
+                     下一级需经验：{}",
+                    player_level.level,
+                    (player_level.attack_multiplier() - 1.0) * 100.0,
+                    player_level.exp_to_next(),
+                );
             }
         }
     }

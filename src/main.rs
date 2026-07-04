@@ -24,6 +24,8 @@ fn main() {
         .add_systems(Update,(
             check_zhuangbei_button,
             check_recovery_button,
+            check_update_button,
+            check_update_button_confirm,
             check_chuji_button,
             check_beibao_button,
             check_cangku_button,

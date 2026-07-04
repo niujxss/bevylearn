@@ -145,6 +145,8 @@ pub fn start_game(mut commands: Commands, mut next_status: ResMut<NextState<Apps
     commands.insert_resource(Backpack::new());
     commands.insert_resource(Warehouse::new());
     commands.insert_resource(WarehouseNeedsRefresh(false));
+    // 初始化等级系统
+    commands.insert_resource(PlayerLevel::new());
 
     let canno_config = db.get(CannonType::CannonLevel1).unwrap();
     let secgun_config = sec_db.get(SecgunType::SecGunLevel1).unwrap();
