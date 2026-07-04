@@ -328,6 +328,7 @@ pub fn create_home_ui(mut commands: Commands, asset: Res<AssetServer>, mut playe
     ));
 }
 
+//装备
 pub fn check_zhuangbei_button(
     player: Query<(&Player, &Cannon, &SecGun, &Engine)>,
     mut interaction_query: Query<(&Interaction, &mut BorderColor), (Changed<Interaction>, With<ZhuangBeiButton>)>,
@@ -375,7 +376,7 @@ pub fn check_zhuangbei_button(
     }
 }
 
-
+//恢复
 pub fn check_recovery_button(
     mut player: Query<(&mut Player, &mut Cannon)>,
     mut interaction_query: Query<(&Interaction, &mut BorderColor), (Changed<Interaction>, With<RecoveryButton>)>,
@@ -423,6 +424,8 @@ pub fn check_recovery_button(
     }
 }
 
+
+//背包系统
 pub fn check_beibao_button(
     mut interaction_query: Query<(&Interaction, &mut BorderColor), (Changed<Interaction>, With<BeiBaoButton>)>,
     backpack: Option<Res<Backpack>>,
@@ -456,6 +459,7 @@ pub fn check_beibao_button(
     }
 }
 
+//出击
 pub fn check_chuji_button(
     mut interaction_query: Query<(&Interaction, &mut BorderColor), (Changed<Interaction>, With<ChuJiButton>)>,
     mut next_status: ResMut<NextState<Appstatus>>,
