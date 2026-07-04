@@ -19,7 +19,7 @@
         loot: [
             (item: ScrapIron, quantity: 3, probability: 1.0),
             (item: CopperWire, quantity: 2, probability: 0.5),
-            (item: Leather, quantity: 1, probability: 1.0),
+            (item: Leather, quantity: 2, probability: 1.0),
             (item: DryBattery, quantity: 1, probability: 0.1),
         ],
     ),
@@ -43,7 +43,7 @@
         image_path: Some("jiqiren_3.png"),
         loot: [
             (item: ScrapIron, quantity: 3, probability: 1.0),
-            (item: Leather, quantity: 1, probability: 1.0),
+            (item: Leather, quantity: 4, probability: 1.0),
             (item: CopperWire, quantity: 2, probability: 0.5),
             (item: DryBattery, quantity: 1, probability: 0.1),
         ],
