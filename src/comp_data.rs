@@ -327,6 +327,57 @@ impl PlayerLevel {
     }
 }
 
+// ============ 存档系统 ============
+
+const SAVE_PATH: &str = "savegame.ron";
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SaveData {
+    pub player_health: i32,
+    pub player_max_health: i32,
+    pub cannon_type: CannonType,
+    pub secgun_type: SecgunType,
+    pub engine_type: EngineType,
+    pub player_level: u32,
+    pub player_exp: u32,
+    pub backpack: Vec<ItemStack>,
+    pub warehouse: Vec<ItemStack>,
+}
+
+pub fn save_game(
+    player: &Player,
+    cannon: &Cannon,
+    secgun: &SecGun,
+    engine: &Engine,
+    player_level: &PlayerLevel,
+    backpack: &Backpack,
+    warehouse: &Warehouse,
+) -> Result<(), String> {
+    let data = SaveData {
+        player_health: player.health,
+        player_max_health: player.max_health,
+        cannon_type: cannon.cannon_type,
+        secgun_type: secgun.secgun_type,
+        engine_type: engine.enginetype,
+        player_level: player_level.level,
+        player_exp: player_level.exp,
+        backpack: backpack.items.clone(),
+        warehouse: warehouse.items.clone(),
+    };
+    let ron_str = ron::ser::to_string(&data).map_err(|e| format!("序列化失败：{}", e))?;
+    std::fs::write(SAVE_PATH, &ron_str).map_err(|e| format!("写入文件失败：{}", e))?;
+    Ok(())
+}
+
+pub fn load_save() -> Option<SaveData> {
+    let content = std::fs::read_to_string(SAVE_PATH).ok()?;
+    ron::from_str(&content).ok()
+}
+
+pub fn save_exists() -> bool {
+    std::path::Path::new(SAVE_PATH).exists()
+}
+
 // ============ 物品 & 背包系统 ============
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -376,7 +427,7 @@ impl ItemType {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ItemStack {
     pub item_type: ItemType,
     pub quantity: u32,

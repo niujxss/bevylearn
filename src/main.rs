@@ -20,6 +20,7 @@ fn main() {
         .add_systems(OnEnter(Appstatus::Game), start_game)
         .add_systems(Update, start_button_systems.run_if(in_state(Appstatus::Menu)))
         .add_systems(Update, stop_button_systems.run_if(in_state(Appstatus::Menu)))
+        .add_systems(Update, load_button_systems.run_if(in_state(Appstatus::Menu)))
         .add_systems(OnEnter(Appstatus::Vollage), create_home_ui)
         .add_systems(Update,(
             check_zhuangbei_button,
@@ -27,6 +28,7 @@ fn main() {
             check_update_button,
             check_chuji_button,
             check_beibao_button,
+            check_save_button,
             check_cangku_button,
             close_warehouse,
             handle_deposit,

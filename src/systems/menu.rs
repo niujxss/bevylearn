@@ -2,104 +2,180 @@ use super::warehouse::WarehouseNeedsRefresh;
 use crate::comp_data::*;
 use bevy::color::palettes::basic::*;
 use bevy::prelude::*;
+
+#[derive(Component)]
+pub struct LoadGameUi;
+
 pub fn create_menu(asset: &AssetServer) -> impl Bundle {
     let image = asset.load("Menu_image.png");
     (
         Node {
-            width: percent(100), // 父节点，没有父节点，所以父节点是窗口
+            width: percent(100),
             height: percent(100),
-            align_items: AlignItems::Center, // 子节点垂直居中 
-            justify_content: JustifyContent::Center, // 子节点水平居中 
-            flex_direction: FlexDirection::Column, // 子元素垂直排列
-            row_gap: px(20.0), // 垂直间隔
+            align_items: AlignItems::Center,
+            justify_content: JustifyContent::Center,
+            flex_direction: FlexDirection::Column,
+            row_gap: px(20.0),
             ..default()
         },
         ImageNode::new(image),
         EnumUi,
-        children![ //宏，自动创建子节点
+        children![
             (
                 Button,
                 Node {
-                    width: px(150), // 宽 150像素
-                    height: px(65), // 高65像素
-                    border: UiRect::all(px(5)),  // UiRect 是四个边的矩形，all 是这是四周宽度都是5个像素；
-                                                 // border 定义边框宽度
+                    width: px(150),
+                    height: px(65),
+                    border: UiRect::all(px(5)),
                     justify_content: JustifyContent::Center,
                     align_items: AlignItems::Center,
                     ..default()
                 },
                 StartGameUi,
-                BorderColor::all(Color::WHITE), //边框颜色,白色
-                BorderRadius::all(px(8.0)), // 8像素的圆角半径，更现代
+                BorderColor::all(Color::WHITE),
+                BorderRadius::all(px(8.0)),
                 BackgroundColor(Color::BLACK),
-                children![
-                    (
-                        Text::new("开始游戏"),
-                        TextFont {
-                            font: asset.load("fonts/STKAITI.TTF"),
-                            font_size: 33.0,
-                            ..default()
-                        },
-                        TextColor(Color::srgb(0.9, 0.9, 0.9)), //文本颜色
-                        //TextShadow::default()  //字体阴影
-                        
-                    )
-                ]
+                children![(
+                    Text::new("开始游戏"),
+                    TextFont { font: asset.load("fonts/STKAITI.TTF"), font_size: 33.0, ..default() },
+                    TextColor(Color::srgb(0.9, 0.9, 0.9)),
+                )],
             ),
             (
                 Button,
                 Node {
-                    width: px(150), // 宽 150像素
-                    height: px(65), // 高65像素
-                    border: UiRect::all(px(5)),  // UiRect 是四个边的矩形，all 是这是四周宽度都是5个像素；
-                                                 // border 定义边框宽度
+                    width: px(150),
+                    height: px(65),
+                    border: UiRect::all(px(5)),
+                    justify_content: JustifyContent::Center,
+                    align_items: AlignItems::Center,
+                    ..default()
+                },
+                LoadGameUi,
+                BorderColor::all(Color::WHITE),
+                BorderRadius::all(px(8.0)),
+                BackgroundColor(Color::BLACK),
+                children![(
+                    Text::new("读取存档"),
+                    TextFont { font: asset.load("fonts/STKAITI.TTF"), font_size: 33.0, ..default() },
+                    TextColor(Color::srgb(0.8, 0.9, 0.6)),
+                )],
+            ),
+            (
+                Button,
+                Node {
+                    width: px(150),
+                    height: px(65),
+                    border: UiRect::all(px(5)),
                     justify_content: JustifyContent::Center,
                     align_items: AlignItems::Center,
                     ..default()
                 },
                 StopGameUi,
-                BorderColor::all(Color::WHITE), //边框颜色,白色
-                BorderRadius::all(px(8.0)), // 8像素的圆角半径，更现代
+                BorderColor::all(Color::WHITE),
+                BorderRadius::all(px(8.0)),
                 BackgroundColor(Color::BLACK),
-                children![
-                    (
-                        Text::new("结束游戏"),
-                        TextFont {
-                            font: asset.load("fonts/STKAITI.TTF"),
-                            font_size: 33.0,
-                            ..default()
-                        },
-                        TextColor(Color::srgb(0.9, 0.9, 0.9)), //文本颜色
-                    )
-                ]
-            )
+                children![(
+                    Text::new("结束游戏"),
+                    TextFont { font: asset.load("fonts/STKAITI.TTF"), font_size: 33.0, ..default() },
+                    TextColor(Color::srgb(0.9, 0.9, 0.9)),
+                )],
+            ),
         ],
     )
 }
 
-
-pub fn start_button_systems(
-    // Interaction 是记录UI实体与鼠标或触摸之间的交互状态；
-    // 他有三个状态，无交互，悬停和按下
+pub fn load_button_systems(
     mut commands: Commands,
-    mut interaction_query: Query<( //查找同时包含这么多组件的实体，
-            &Interaction,  //Interaction会自动添加到button组件的实体上
-            &mut BorderColor, //边框颜色
-        ), (Changed<Interaction>, With<StartGameUi>) >, // 添加限定条件，Interaction变化时
+    mut interaction_query: Query<
+        (&Interaction, &mut BorderColor),
+        (Changed<Interaction>, With<LoadGameUi>),
+    >,
     menu_entity: Query<Entity, With<EnumUi>>,
-    mut next_status: ResMut<NextState<Appstatus>>
+    mut next_status: ResMut<NextState<Appstatus>>,
+    db: Res<CannonDataBase>,
+    sec_db: Res<SecgunDataBase>,
+    eng_db: Res<EngineDataBase>,
 ) {
-    for ( interaction, mut border_color ) in interaction_query.iter_mut() {
-
+    for (interaction, mut border_color) in interaction_query.iter_mut() {
         match interaction {
             Interaction::Pressed => {
                 border_color.set_all(RED);
-                //menu_entity
+                if let Some(save) = load_save() {
+                    // 清除菜单
+                    if let Ok(menu_en) = menu_entity.single() {
+                        commands.entity(menu_en).despawn_children();
+                        commands.entity(menu_en).despawn();
+                    }
+
+                    // 初始化资源
+                    commands.insert_resource(Backpack::new());
+                    commands.insert_resource(Warehouse::new());
+                    commands.insert_resource(WarehouseNeedsRefresh(false));
+                    commands.insert_resource(PlayerLevel { level: save.player_level, exp: save.player_exp });
+
+                    // 填充背包
+                    let mut bp = Backpack::new();
+                    for s in &save.backpack {
+                        let _ = bp.add(s.item_type, s.quantity);
+                    }
+                    commands.insert_resource(bp);
+
+                    // 填充仓库
+                    let mut wh = Warehouse::new();
+                    for s in &save.warehouse {
+                        wh.store(s.item_type, s.quantity);
+                    }
+                    commands.insert_resource(wh);
+
+                    // 创建玩家实体（恢复装备和血量）
+                    let cannon_cfg = db.get(save.cannon_type).unwrap();
+                    let secgun_cfg = sec_db.get(save.secgun_type).unwrap();
+                    let engine_cfg = eng_db.get(save.engine_type).unwrap();
+
+                    commands.spawn((
+                        Player { health: save.player_health, max_health: save.player_max_health },
+                        Cannon::new(save.cannon_type, cannon_cfg),
+                        SecGun::new(save.secgun_type, secgun_cfg),
+                        Engine::new(save.engine_type, engine_cfg),
+                    ));
+
+                    next_status.set(Appstatus::Vollage);
+                } else {
+                    // 没有存档可用，但按钮还在菜单，让系统继续运行
+                    // 实际上 log 没法在这里用，暂时忽略
+                }
+            }
+            Interaction::Hovered => {
+                border_color.set_all(WHITE);
+            }
+            Interaction::None => {
+                border_color.set_all(BLACK);
+            }
+        }
+    }
+}
+
+pub fn start_button_systems(
+    mut commands: Commands,
+    mut interaction_query: Query<
+        (
+            &Interaction,
+            &mut BorderColor,
+        ),
+        (Changed<Interaction>, With<StartGameUi>),
+    >,
+    menu_entity: Query<Entity, With<EnumUi>>,
+    mut next_status: ResMut<NextState<Appstatus>>,
+) {
+    for (interaction, mut border_color) in interaction_query.iter_mut() {
+        match interaction {
+            Interaction::Pressed => {
+                border_color.set_all(RED);
                 if let Ok(menu_en) = menu_entity.single() {
                     commands.entity(menu_en).despawn_children();
                     commands.entity(menu_en).despawn();
                     next_status.set(Appstatus::Game);
-                    
                 }
             }
             Interaction::Hovered => {
@@ -113,16 +189,16 @@ pub fn start_button_systems(
 }
 
 pub fn stop_button_systems(
-    // Interaction 是记录UI实体与鼠标或触摸之间的交互状态；
-    // 他有三个状态，无交互，悬停和按下
-    mut interaction_query: Query<( //查找同时包含这么多组件的实体，
-            &Interaction,  //Interaction会自动添加到button组件的实体上
+    mut interaction_query: Query<
+        (
+            &Interaction,
             &mut BorderColor,
-        ), (Changed<Interaction>,With<StopGameUi>)>, // 添加限定条件，Interaction变化时
+        ),
+        (Changed<Interaction>, With<StopGameUi>),
+    >,
     mut app_exit_events: MessageWriter<AppExit>,
 ) {
-    for ( interaction, mut border_color ) in interaction_query.iter_mut() {
-
+    for (interaction, mut border_color) in interaction_query.iter_mut() {
         match interaction {
             Interaction::Pressed => {
                 border_color.set_all(RED);
@@ -138,29 +214,23 @@ pub fn stop_button_systems(
     }
 }
 
-pub fn start_game(mut commands: Commands, mut next_status: ResMut<NextState<Appstatus>>, 
-    db: Res<CannonDataBase>, sec_db: Res<SecgunDataBase>, eng_db: Res<EngineDataBase>) 
+pub fn start_game(mut commands: Commands, mut next_status: ResMut<NextState<Appstatus>>,
+    db: Res<CannonDataBase>, sec_db: Res<SecgunDataBase>, eng_db: Res<EngineDataBase>)
 {
-    // 初始化背包、仓库和刷新标志
     commands.insert_resource(Backpack::new());
     commands.insert_resource(Warehouse::new());
     commands.insert_resource(WarehouseNeedsRefresh(false));
-    // 初始化等级系统
     commands.insert_resource(PlayerLevel::new());
 
     let canno_config = db.get(CannonType::CannonLevel1).unwrap();
     let secgun_config = sec_db.get(SecgunType::SecGunLevel1).unwrap();
     let engine_config = eng_db.get(EngineType::EngineLevel1).unwrap();
     commands.spawn((
-        Player {
-            health: 0,
-            max_health: 0,
-        },
+        Player { health: 0, max_health: 0 },
         Cannon::new(CannonType::CannonLevel1, canno_config),
         SecGun::new(SecgunType::SecGunLevel1, secgun_config),
-        Engine::new(EngineType::EngineLevel1, engine_config)
-        
+        Engine::new(EngineType::EngineLevel1, engine_config),
     ));
-    
+
     next_status.set(Appstatus::Vollage);
 }

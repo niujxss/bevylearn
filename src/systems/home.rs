@@ -1,7 +1,7 @@
+use super::warehouse::CangKuButton;
 use crate::comp_data::*;
 use bevy::color::palettes::basic::*;
 use bevy::prelude::*;
-use super::warehouse::CangKuButton;
 
 #[derive(Component)]
 struct VollageUi;
@@ -23,6 +23,9 @@ pub struct ZhuangBeiButton;
 
 #[derive(Component)]
 pub struct BeiBaoButton;
+
+#[derive(Component)]
+pub struct SaveButton;
 
 #[derive(Component)]
 pub struct VollageMessage;
@@ -296,6 +299,31 @@ pub fn create_home_ui(mut commands: Commands, asset: Res<AssetServer>, mut playe
                             TextColor(Color::srgb(0.9, 0.9, 0.9)),
                         )]
                     ),
+                    (
+                        // 存档
+                        SaveButton,
+                        Button,
+                        Node {
+                            width: px(100),
+                            height: px(35),
+                            border: UiRect::all(px(5)),
+                            justify_content: JustifyContent::Center,
+                            align_items: AlignItems::Center,
+                            ..default()
+                        },
+                        BorderColor::all(Color::WHITE),
+                        BorderRadius::all(px(8.0)),
+                        BackgroundColor(Color::BLACK),
+                        children![(
+                            Text::new("存档"),
+                            TextFont {
+                                font: asset.load("fonts/STKAITI.TTF"),
+                                font_size: 16.0,
+                                ..default()
+                            },
+                            TextColor(Color::srgb(0.6, 0.9, 0.6)),
+                        )]
+                    ),
                 ],
             ),
             (
@@ -476,6 +504,47 @@ pub fn check_update_button(
             Interaction::Pressed => {
                 border_color.set_all(AQUA);
                 next_status.set(Appstatus::Upgrade);
+            }
+            Interaction::Hovered => {
+                border_color.set_all(OLIVE);
+            }
+            Interaction::None => {
+                border_color.set_all(WHITE);
+            }
+        }
+    }
+}
+
+//存档
+pub fn check_save_button(
+    player: Query<(&Player, &Cannon, &SecGun, &Engine)>,
+    player_level: Res<PlayerLevel>,
+    backpack: Res<Backpack>,
+    warehouse: Res<Warehouse>,
+    mut interaction_query: Query<
+        (&Interaction, &mut BorderColor),
+        (Changed<Interaction>, With<SaveButton>),
+    >,
+    mut text: Query<&mut Text, With<VollageMessage>>,
+) {
+    if let Ok((inter, mut border_color)) = interaction_query.single_mut() {
+        match inter {
+            Interaction::Pressed => {
+                border_color.set_all(AQUA);
+                if let Ok((player, cannon, secgun, engine)) = player.single() {
+                    match save_game(&player, cannon, secgun, engine, &player_level, &backpack, &warehouse) {
+                        Ok(()) => {
+                            if let Ok(mut t) = text.single_mut() {
+                                t.0 = "✅ 存档成功！游戏进度已保存到 savegame.ron".to_string();
+                            }
+                        }
+                        Err(e) => {
+                            if let Ok(mut t) = text.single_mut() {
+                                t.0 = format!("❌ 存档失败：{}", e);
+                            }
+                        }
+                    }
+                }
             }
             Interaction::Hovered => {
                 border_color.set_all(OLIVE);
