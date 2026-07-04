@@ -658,15 +658,13 @@ pub fn check_battle_result(
                 }
                 // 经验奖励（基于敌人权重和HP）
                 let exp_gain = (template.weight * 10 + template.hp as u32 * 2) as u32;
-                let leveled_up = player_level.gain_exp(exp_gain);
-                log.add(format!("✨ 获得 {} 经验值！", exp_gain));
-                if leveled_up {
-                    log.add(format!(
-                        "🎉 升级！当前等级 Lv.{}，攻击加成 {:.0}%",
-                        player_level.level,
-                        (player_level.attack_multiplier() - 1.0) * 100.0
-                    ));
-                }
+                player_level.gain_exp(exp_gain);
+                log.add(format!(
+                    "✨ 获得 {} 经验值！（当前 {}/{} 可升级）",
+                    exp_gain,
+                    player_level.exp,
+                    player_level.exp_to_next()
+                ));
             }
         }
     }

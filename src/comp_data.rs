@@ -283,20 +283,22 @@ impl PlayerLevel {
         100 + (self.level - 1) * 50
     }
 
-    /// 尝试增加经验，返回是否升级了
-    pub fn gain_exp(&mut self, amount: u32) -> bool {
+    /// 积累经验值（仅累加，不自动升级——升级需在基地消耗材料手动操作）
+    pub fn gain_exp(&mut self, amount: u32) {
         self.exp += amount;
-        let needed = self.exp_to_next();
-        if self.exp >= needed {
-            self.exp -= needed;
-            self.level += 1;
-            true
-        } else {
-            false
-        }
     }
 
-    /// 当前等级的升级成本
+    /// 判断是否有足够经验进行下一次升级
+    pub fn has_enough_exp(&self) -> bool {
+        self.exp >= self.exp_to_next()
+    }
+
+    /// 判断是否已达最高等级
+    pub fn is_max_level(&self) -> bool {
+        self.level >= 10
+    }
+
+    /// 当前等级的升级成本（需要消耗的材料）
     pub fn upgrade_cost() -> Vec<(ItemType, u32)> {
         // 固定成本，可按等级进行变化
         vec![
