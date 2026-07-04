@@ -1,7 +1,7 @@
 // 升级配置
 // level：达到该等级所需的经验值和材料
 // 例：level=2 表示从 Lv.1 升到 Lv.2 需要 10 经验和 废铁×3
-{
+RawUpgradeData(
     levels: [
         (
             level: 2,
@@ -50,4 +50,4 @@
         ),
     ],
     max_level: 6,
-}
+)
