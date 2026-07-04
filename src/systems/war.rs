@@ -509,9 +509,10 @@ pub fn update_battle_display(
         }
     }
 
-    // 更新战斗日志
+    // 更新战斗日志（显示最近4条）
     if let Ok(mut text) = text_params.p3().single_mut() {
-        text.0 = log.messages.last().cloned().unwrap_or_default();
+        let start = log.messages.len().saturating_sub(4);
+        text.0 = log.messages[start..].join("\n");
     }
 }
 
