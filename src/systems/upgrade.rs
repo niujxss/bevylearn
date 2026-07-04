@@ -186,17 +186,19 @@ pub fn update_upgrade_display(
     upgrade_db: Res<UpgradeDataBase>,
     backpack: Option<Res<Backpack>>,
     warehouse: Option<Res<Warehouse>>,
-    mut level_text: Query<&mut Text, With<UpgradeLevelText>>,
-    mut exp_text: Query<&mut Text, With<UpgradeExpText>>,
-    mut atk_text: Query<&mut Text, With<UpgradeAtkText>>,
-    mut mat_text: Query<&mut Text, With<UpgradeMaterialList>>,
-    mut result_text: Query<&mut Text, With<UpgradeResultText>>,
+    mut text_params: ParamSet<(
+        Query<&mut Text, With<UpgradeLevelText>>,
+        Query<&mut Text, With<UpgradeExpText>>,
+        Query<&mut Text, With<UpgradeAtkText>>,
+        Query<&mut Text, With<UpgradeMaterialList>>,
+        Query<&mut Text, With<UpgradeResultText>>,
+    )>,
 ) {
     let next_lv = player_level.level + 1;
     let mut result = String::new();
 
     // 等级文字
-    if let Ok(mut t) = level_text.single_mut() {
+    if let Ok(mut t) = text_params.p0().single_mut() {
         if next_lv > upgrade_db.max_level {
             t.0 = format!("等级：Lv.{}（已满级）", player_level.level);
         } else {
@@ -205,7 +207,7 @@ pub fn update_upgrade_display(
     }
 
     // 攻击加成文字
-    if let Ok(mut t) = atk_text.single_mut() {
+    if let Ok(mut t) = text_params.p2().single_mut() {
         let curr_bonus = (player_level.attack_multiplier() - 1.0) * 100.0;
         let next_bonus = curr_bonus + 10.0;
         if next_lv > upgrade_db.max_level {
@@ -218,7 +220,7 @@ pub fn update_upgrade_display(
     // 查找本级的升级配置
     if let Some(cfg) = upgrade_db.for_level(next_lv) {
         // 经验文字
-        if let Ok(mut t) = exp_text.single_mut() {
+        if let Ok(mut t) = text_params.p1().single_mut() {
             t.0 = format!("经验：{} / {}（需战斗获得）", player_level.exp, cfg.exp_needed);
         }
 
@@ -252,7 +254,7 @@ pub fn update_upgrade_display(
             all_exp_ok = true;
         }
 
-        if let Ok(mut t) = mat_text.single_mut() {
+        if let Ok(mut t) = text_params.p3().single_mut() {
             t.0 = mat_lines;
         }
 
@@ -270,16 +272,16 @@ pub fn update_upgrade_display(
         }
     } else {
         // 没有找到配置（已满级或数据缺失）
-        if let Ok(mut t) = exp_text.single_mut() {
+        if let Ok(mut t) = text_params.p1().single_mut() {
             t.0 = format!("经验：{}（已达最高等级）", player_level.exp);
         }
-        if let Ok(mut t) = mat_text.single_mut() {
+        if let Ok(mut t) = text_params.p3().single_mut() {
             t.0 = "无需更多材料，已满级！".to_string();
         }
         result = "🎉 你已满级！".to_string();
     }
 
-    if let Ok(mut t) = result_text.single_mut() {
+    if let Ok(mut t) = text_params.p4().single_mut() {
         t.0 = result;
     }
 }
