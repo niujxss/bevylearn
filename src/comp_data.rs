@@ -2,6 +2,7 @@ use bevy::prelude::*;
 use serde::Deserialize;
 use serde::Serialize;
 use std::collections::HashMap;
+use rand::prelude::*;
 
 #[derive(Component)]
 pub struct EnumUi;
@@ -376,7 +377,7 @@ impl Default for Backpack {
 }
 
 /// 背包最大格数（每行3格，共5行）
-pub const BACKPACK_MAX_SLOTS: usize = 15;
+pub const BACKPACK_MAX_SLOTS: usize = 30;
 
 impl Backpack {
     pub fn new() -> Self {
@@ -545,11 +546,8 @@ impl EnemyDataBase {
         if total_weight == 0 {
             return &self.configs[0];
         }
-        let seed = std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .unwrap()
-            .subsec_nanos() as u32;
-        let roll = seed % total_weight;
+        let mut rng = thread_rng();
+        let roll = rng.gen_range(0..total_weight);
         let mut cumulative = 0;
         for config in self.configs.iter() {
             cumulative += config.weight;
