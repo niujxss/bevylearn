@@ -625,6 +625,7 @@ pub fn check_battle_result(
     mut log: ResMut<BattleLog>,
     mut backpack: ResMut<Backpack>,
     mut player_level: ResMut<PlayerLevel>,
+    warehouse: Option<Res<Warehouse>>,
     enemy_db: Res<EnemyDataBase>,
     enemy_query: Query<&Enemy>,
     fire_query: Query<Entity, With<FireButton>>,
@@ -655,7 +656,11 @@ pub fn check_battle_result(
                         if *item == ItemType::V8EngineBlueprint {
                             let in_bp = backpack.items.iter()
                                 .any(|s| s.item_type == ItemType::V8EngineBlueprint && s.quantity > 0);
-                            !in_bp
+                            let empty_wh = Vec::new();
+                            let wh_items = warehouse.as_ref().map(|w| &w.items).unwrap_or(&empty_wh);
+                            let in_wh = wh_items.iter()
+                                .any(|s| s.item_type == ItemType::V8EngineBlueprint && s.quantity > 0);
+                            !(in_bp || in_wh)
                         } else {
                             true
                         }
