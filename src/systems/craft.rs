@@ -282,7 +282,6 @@ pub fn refresh_craft_recipes(
     asset_server: Res<AssetServer>,
     existing: Query<Entity, With<CraftRecipeButton>>,
 ) {
-    // 只运行一次：当配方列表还没有按钮时
     if !existing.is_empty() {
         return;
     }
@@ -309,18 +308,6 @@ pub fn refresh_craft_recipes(
             ));
 
             for (i, item) in item_db.items.iter().enumerate() {
-                let is_selected = i == selected.0;
-                let bg = if is_selected {
-                    Color::srgb(0.05, 0.25, 0.1)
-                } else {
-                    Color::srgb(0.04, 0.12, 0.06)
-                };
-                let border = if is_selected {
-                    Color::srgb(0.1, 0.9, 0.3)
-                } else {
-                    Color::srgb(0.1, 0.3, 0.1)
-                };
-
                 list.spawn((
                     Button,
                     CraftRecipeButton(i),
@@ -332,21 +319,46 @@ pub fn refresh_craft_recipes(
                         align_items: AlignItems::Center,
                         ..default()
                     },
-                    BorderColor::all(border),
+                    BorderColor::all(Color::srgb(0.1, 0.3, 0.1)),
                     BorderRadius::all(px(6.0)),
-                    BackgroundColor(bg),
+                    BackgroundColor(Color::srgb(0.04, 0.12, 0.06)),
                     children![(
                         Text::new(format!("{} {}", item.icon, item.name)),
                         TextFont { font: font.clone(), font_size: 20.0, ..default() },
-                        TextColor(if is_selected {
-                            Color::srgb(0.3, 1.0, 0.4)
-                        } else {
-                            Color::srgb(0.7, 0.9, 0.7)
-                        }),
+                        TextColor(Color::srgb(0.7, 0.9, 0.7)),
                     )],
                 ));
             }
         });
+    }
+}
+
+// ============ 每帧更新合成配方选中状态的颜色 ============
+
+pub fn update_craft_selection(
+    selected: Res<SelectedCraftRecipe>,
+    mut query: Query<
+        (&CraftRecipeButton, &mut BackgroundColor, &mut BorderColor, &mut Text, &Children),
+        With<CraftRecipeButton>,
+    >,
+) {
+    for (btn, mut bg, mut border, mut text, _children) in query.iter_mut() {
+        let is_sel = btn.0 == selected.0;
+        bg.0 = if is_sel {
+            Color::srgb(0.05, 0.25, 0.1)
+        } else {
+            Color::srgb(0.04, 0.12, 0.06)
+        };
+        if is_sel {
+            border.set_all(Color::srgb(0.1, 0.9, 0.3));
+        } else {
+            border.set_all(Color::srgb(0.1, 0.3, 0.1));
+        }
+        text.0 = if is_sel {
+            format!("▶ {}", text.0.trim_start_matches("▶ "))
+        } else {
+            text.0.trim_start_matches("▶ ").to_string()
+        };
     }
 }
 

@@ -948,72 +948,75 @@ pub fn check_item_button(
                 // 作为WarRoot子节点创建道具面板
                 if let Ok(root) = root_query.single() {
                     commands.entity(root).with_children(|parent| {
+                        // 面板容器 + 标题 + 道具按钮全部嵌套
                         parent.spawn((
                             ItemPanel,
                             DespawnOnExit(Appstatus::War),
                             Name::new("ItemPanel"),
                             Node {
-                                width: percent(60),
-                                height: percent(30),
+                                width: percent(50),
+                                height: percent(45),
                                 position_type: PositionType::Absolute,
-                                top: px(80.0),
-                                left: px(80.0),
+                                top: px(60.0),
+                                left: px(120.0),
                                 flex_direction: FlexDirection::Column,
                                 align_items: AlignItems::Center,
-                                justify_content: JustifyContent::FlexStart,
-                                padding: UiRect::all(px(8.0)),
-                                row_gap: px(6.0),
+                                padding: UiRect::all(px(10.0)),
+                                row_gap: px(8.0),
+                                overflow: Overflow::clip(),
                                 border: UiRect::all(px(2)),
                                 ..default()
                             },
                             BorderColor::all(Color::srgb(0.1, 0.8, 0.3)),
-                            BorderRadius::all(px(8.0)),
-                            BackgroundColor(Color::srgba(0.05, 0.05, 0.15, 0.95)),
-                            children![
-                                (
-                                    Node {
-                                        width: percent(100),
-                                        height: percent(20),
-                                        justify_content: JustifyContent::Center,
-                                        align_items: AlignItems::Center,
-                                        ..default()
-                                    },
-                                    children![(
-                                        Text::new("📦 选择道具"),
-                                        TextFont {
-                                            font: font.clone(),
-                                            font_size: 22.0,
-                                            ..default()
-                                        },
-                                        TextColor(Color::srgb(0.3, 1.0, 0.4)),
-                                    )],
-                                ),
-                            ],
-                        ));
-                        // 每个道具生成一个按钮
-                        for (item_type, qty) in &useable_items {
-                            let config = item_db.find_by_type(*item_type).unwrap();
-                            parent.spawn((
-                                Button,
-                                ItemUseButton(*item_type),
+                            BorderRadius::all(px(10.0)),
+                            BackgroundColor(Color::srgba(0.05, 0.05, 0.18, 0.96)),
+                        )).with_children(|panel| {
+                            // 标题
+                            panel.spawn((
                                 Node {
-                                    width: percent(80),
-                                    height: px(36),
-                                    border: UiRect::all(px(1)),
+                                    width: percent(100),
+                                    height: px(30),
                                     justify_content: JustifyContent::Center,
                                     align_items: AlignItems::Center,
                                     ..default()
                                 },
-                                BorderColor::all(Color::srgb(0.3, 0.8, 0.3)),
-                                BorderRadius::all(px(6.0)),
-                                BackgroundColor(Color::srgb(0.08, 0.2, 0.08)),
                                 children![(
-                                    Text::new(format!("{} {} ×{}", config.icon, config.name, qty)),
-                                    TextFont { font: font.clone(), font_size: 18.0, ..default() },
+                                    Text::new("📦 选择道具"),
+                                    TextFont { font: font.clone(), font_size: 22.0, ..default() },
                                     TextColor(Color::srgb(0.3, 1.0, 0.4)),
                                 )],
                             ));
-                        }
+
+                            // 每个道具生成一个按钮（作为面板的子节点）
+                            for (item_type, qty) in &useable_items {
+                                let config = item_db.find_by_type(*item_type).unwrap();
+                                let text = if config.name.len() > 4 {
+                                    format!("{} {} ×{}", config.icon, config.name, qty)
+                                } else {
+                                    format!("{} {}  ×{}", config.icon, config.name, qty)
+                                };
+                                panel.spawn((
+                                    Button,
+                                    ItemUseButton(*item_type),
+                                    Node {
+                                        width: percent(90),
+                                        height: px(38),
+                                        border: UiRect::all(px(1)),
+                                        justify_content: JustifyContent::Center,
+                                        align_items: AlignItems::Center,
+                                        ..default()
+                                    },
+                                    BorderColor::all(Color::srgb(0.3, 0.8, 0.3)),
+                                    BorderRadius::all(px(6.0)),
+                                    BackgroundColor(Color::srgb(0.08, 0.2, 0.08)),
+                                    children![(
+                                        Text::new(text),
+                                        TextFont { font: font.clone(), font_size: 18.0, ..default() },
+                                        TextColor(Color::srgb(0.3, 1.0, 0.4)),
+                                    )],
+                                ));
+                            }
+                        });
                     });
                 }
             }

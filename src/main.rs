@@ -80,6 +80,7 @@ fn main() {
         .add_systems(Update, (
                 refresh_craft_recipes,
                 update_craft_display,
+                update_craft_selection,
                 check_craft_recipe_buttons,
                 check_craft_do_button,
                 check_craft_back_button,
