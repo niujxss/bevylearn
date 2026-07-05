@@ -6,12 +6,6 @@ use bevy::prelude::*;
 use comp_data::*;
 use systems::*;
 
-
-
-
-
-
-
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
@@ -26,6 +20,7 @@ fn main() {
             check_zhuangbei_button,
             check_recovery_button,
             check_update_button,
+            check_forge_button,
             check_chuji_button,
             check_beibao_button,
             check_save_button,
@@ -68,10 +63,18 @@ fn main() {
                 check_upgrade_back_button,
             ).run_if(in_state(Appstatus::Upgrade)))
 
+        .add_systems(OnEnter(Appstatus::Forge), create_forge_ui)
+        .add_systems(Update, (
+                refresh_forge_recipes,
+                update_forge_display,
+                check_forge_recipe_buttons,
+                check_forge_do_button,
+                check_forge_back_button,
+            ).run_if(in_state(Appstatus::Forge)))
+
         .run();
 
 }
-
 
 fn setup(mut commands : Commands,
 asset : Res<AssetServer>) {
@@ -93,18 +96,7 @@ asset : Res<AssetServer>) {
 
     let db = UpgradeDataBase::load().unwrap();
     commands.insert_resource(db);
+
+    let db = ForgeDataBase::load().unwrap();
+    commands.insert_resource(db);
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-

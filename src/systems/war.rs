@@ -649,6 +649,18 @@ pub fn check_battle_result(
             if let Some(template) = enemy_db.find_by_name(&enemy.name) {
                 // 战利品掉落
                 let loot = roll_loot(template);
+                // 过滤掉玩家已经拥有的蓝图（背包或仓库中已有则不再掉落）
+                let loot: Vec<(ItemType, u32)> = loot.into_iter()
+                    .filter(|(item, _)| {
+                        if *item == ItemType::V8EngineBlueprint {
+                            let in_bp = backpack.items.iter()
+                                .any(|s| s.item_type == ItemType::V8EngineBlueprint && s.quantity > 0);
+                            !in_bp
+                        } else {
+                            true
+                        }
+                    })
+                    .collect();
                 for (item, qty) in &loot {
                     log.add(format!("掉落：{} × {}", item.name(), qty));
                 }

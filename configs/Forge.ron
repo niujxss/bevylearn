@@ -1,0 +1,18 @@
+[
+    (
+        name: "V8卡车引擎",
+        description: "将老烟枪引擎升级为V8卡车引擎，大幅提升扭矩和载重能力",
+        part_type: Engine,
+        from_variant: "EngineLevel1",
+        to_variant: "EngineLevel2",
+        blueprints: [
+            (V8EngineBlueprint, 1),
+        ],
+        materials: [
+            (ScrapIron, 10),
+            (CopperWire, 5),
+            (DryBattery, 3),
+            (HighStrengthSpring, 2),
+        ],
+    ),
+]

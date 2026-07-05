@@ -126,6 +126,7 @@ pub enum Appstatus {
     SearchEnemy,
     War,
     Upgrade,
+    Forge,
 }
 
 
@@ -637,3 +638,51 @@ impl EnemyDataBase {
         self.configs.iter().find(|c| c.name == name)
     }
 }
+
+// ============ 锻造系统（改装车间） ============
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub enum ForgePartType {
+    Engine,
+    Cannon,
+    SecGun,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ForgeRecipeConfig {
+    pub name: String,
+    pub description: String,
+    pub part_type: ForgePartType,
+    /// 源enum变体名字符串 e.g. "EngineLevel1"
+    pub from_variant: String,
+    /// 目标enum变体名字符串 e.g. "EngineLevel2"
+    pub to_variant: String,
+    /// 需要的图纸（如V8引擎图纸）
+    pub blueprints: Vec<(ItemType, u32)>,
+    /// 需要的材料
+    pub materials: Vec<(ItemType, u32)>,
+}
+
+#[derive(Resource)]
+pub struct ForgeDataBase {
+    pub recipes: Vec<ForgeRecipeConfig>,
+}
+
+impl ForgeDataBase {
+    pub fn load() -> Result<ForgeDataBase> {
+        let config_path = "configs/Forge.ron";
+        let config_str = std::fs::read_to_string(config_path).unwrap();
+        let recipes: Vec<ForgeRecipeConfig> = ron::from_str(&config_str).unwrap();
+        Ok(Self { recipes })
+    }
+}
+
+/// 检查某种物品在背包或仓库中是否存在（数量>0）
+pub fn has_item_in_storage(item_type: ItemType, backpack: &Backpack, warehouse: &Warehouse) -> bool {
+    let in_bp = backpack.items.iter().any(|s| s.item_type == item_type && s.quantity > 0);
+    let in_wh = warehouse.items.iter().any(|s| s.item_type == item_type && s.quantity > 0);
+    in_bp || in_wh
+}
+
+#[derive(Resource)]
+pub struct SelectedForgeRecipe(pub usize);

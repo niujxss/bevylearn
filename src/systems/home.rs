@@ -22,6 +22,9 @@ pub struct RecoveryButton;
 pub struct ZhuangBeiButton;
 
 #[derive(Component)]
+pub struct ForgeButton;
+
+#[derive(Component)]
 pub struct BeiBaoButton;
 
 #[derive(Component)]
@@ -131,6 +134,35 @@ pub fn create_home_ui(mut commands: Commands, asset: Res<AssetServer>, mut playe
                 children![
                     (
                         Text::new("升级"),
+                        TextFont {
+                            font: asset.load("fonts/STKAITI.TTF"),
+                            font_size: 33.0,
+                            ..default()
+                        },
+                        TextColor(Color::srgb(0.9, 0.9, 0.9)), //文本颜色
+                    )
+                ]
+            ),
+            (
+                // 锻造
+                Button,
+                ForgeButton,
+                Node {
+                    width: px(150), // 宽 150像素
+                    height: px(65), // 高65像素
+                    border: UiRect::all(px(5)),  // UiRect 是四个边的矩形，all 是这是四周宽度都是5个像素；
+                                                 // border 定义边框宽度
+                    justify_content: JustifyContent::Center,
+                    align_items: AlignItems::Center,
+                    ..default()
+                },
+                StopGameUi,
+                BorderColor::all(Color::WHITE), //边框颜色,白色
+                BorderRadius::all(px(8.0)), // 8像素的圆角半径，更现代
+                BackgroundColor(Color::BLACK),
+                children![
+                    (
+                        Text::new("锻造"),
                         TextFont {
                             font: asset.load("fonts/STKAITI.TTF"),
                             font_size: 33.0,
@@ -504,6 +536,30 @@ pub fn check_update_button(
             Interaction::Pressed => {
                 border_color.set_all(AQUA);
                 next_status.set(Appstatus::Upgrade);
+            }
+            Interaction::Hovered => {
+                border_color.set_all(OLIVE);
+            }
+            Interaction::None => {
+                border_color.set_all(WHITE);
+            }
+        }
+    }
+}
+
+//锻造 - 跳转到锻造车间
+pub fn check_forge_button(
+    mut interaction_query: Query<
+        (&Interaction, &mut BorderColor),
+        (Changed<Interaction>, With<ForgeButton>),
+    >,
+    mut next_status: ResMut<NextState<Appstatus>>,
+) {
+    if let Ok((inter, mut border_color)) = interaction_query.single_mut() {
+        match inter {
+            Interaction::Pressed => {
+                border_color.set_all(AQUA);
+                next_status.set(Appstatus::Forge);
             }
             Interaction::Hovered => {
                 border_color.set_all(OLIVE);
