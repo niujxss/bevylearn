@@ -69,6 +69,7 @@
         loot: [
             (item: CopperWire, quantity: 2, probability: 1.0),
             (item: DryBattery, quantity: 1, probability: 0.5),
+            (item: HighStrengthSpring, quantity: 1, probability: 0.3),
             (item: V8EngineBlueprint, quantity: 1, probability: 0.1),
         ],
     ),
