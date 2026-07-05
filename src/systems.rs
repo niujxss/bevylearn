@@ -6,6 +6,7 @@ mod war;
 mod warehouse;
 mod upgrade;
 mod forge;
+mod craft;
 
 pub use menu::*;
 pub use home::*;
@@ -15,3 +16,4 @@ pub use war::*;
 pub use warehouse::*;
 pub use upgrade::*;
 pub use forge::*;
+pub use craft::*;

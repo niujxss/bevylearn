@@ -21,6 +21,7 @@ fn main() {
             check_recovery_button,
             check_update_button,
             check_forge_button,
+            check_craft_button,
             check_chuji_button,
             check_beibao_button,
             check_save_button,
@@ -51,6 +52,9 @@ fn main() {
         .add_systems(Update, (
                 update_battle_display,
                 check_fire_button,
+                check_secfire_button,
+                check_item_button,
+                check_use_item_buttons,
                 check_retreat_button,
                 check_battle_result,
                 check_result_button,
@@ -71,6 +75,15 @@ fn main() {
                 check_forge_do_button,
                 check_forge_back_button,
             ).run_if(in_state(Appstatus::Forge)))
+
+        .add_systems(OnEnter(Appstatus::Craft), create_craft_ui)
+        .add_systems(Update, (
+                refresh_craft_recipes,
+                update_craft_display,
+                check_craft_recipe_buttons,
+                check_craft_do_button,
+                check_craft_back_button,
+            ).run_if(in_state(Appstatus::Craft)))
 
         .run();
 
@@ -98,5 +111,8 @@ asset : Res<AssetServer>) {
     commands.insert_resource(db);
 
     let db = ForgeDataBase::load().unwrap();
+    commands.insert_resource(db);
+
+    let db = ItemDataBase::load().unwrap();
     commands.insert_resource(db);
 }

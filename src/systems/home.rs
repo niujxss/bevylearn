@@ -25,6 +25,9 @@ pub struct ZhuangBeiButton;
 pub struct ForgeButton;
 
 #[derive(Component)]
+pub struct CraftButton;
+
+#[derive(Component)]
 pub struct BeiBaoButton;
 
 #[derive(Component)]
@@ -171,6 +174,32 @@ pub fn create_home_ui(mut commands: Commands, asset: Res<AssetServer>, mut playe
                         TextColor(Color::srgb(0.9, 0.9, 0.9)), //文本颜色
                     )
                 ]
+            ),
+            (
+                // 合成
+                Button,
+                CraftButton,
+                Node {
+                    width: px(150),
+                    height: px(65),
+                    border: UiRect::all(px(5)),
+                    justify_content: JustifyContent::Center,
+                    align_items: AlignItems::Center,
+                    ..default()
+                },
+                StopGameUi,
+                BorderColor::all(Color::WHITE),
+                BorderRadius::all(px(8.0)),
+                BackgroundColor(Color::BLACK),
+                children![(
+                    Text::new("合成"),
+                    TextFont {
+                        font: asset.load("fonts/STKAITI.TTF"),
+                        font_size: 33.0,
+                        ..default()
+                    },
+                    TextColor(Color::srgb(0.3, 1.0, 0.3)),
+                )]
             ),
             (
                 // 补充
@@ -622,6 +651,30 @@ pub fn check_chuji_button(
             Interaction::Pressed => {
                 border_color.set_all(AQUA);
                 next_status.set(Appstatus::WorldMap);
+            }
+            Interaction::Hovered => {
+                border_color.set_all(OLIVE);
+            }
+            Interaction::None => {
+                border_color.set_all(WHITE);
+            }
+        }
+    }
+}
+
+//合成
+pub fn check_craft_button(
+    mut interaction_query: Query<
+        (&Interaction, &mut BorderColor),
+        (Changed<Interaction>, With<CraftButton>),
+    >,
+    mut next_status: ResMut<NextState<Appstatus>>,
+) {
+    if let Ok((interaction, mut border_color)) = interaction_query.single_mut() {
+        match interaction {
+            Interaction::Pressed => {
+                border_color.set_all(AQUA);
+                next_status.set(Appstatus::Craft);
             }
             Interaction::Hovered => {
                 border_color.set_all(OLIVE);

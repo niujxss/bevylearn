@@ -1,0 +1,25 @@
+[
+    (
+        item_type: SmallArmorKit,
+        name: "小型装甲包",
+        description: "用废铁打造的简易装甲包，能恢复50点装甲片",
+        effect: Heal(50),
+        icon: "🛡️",
+        materials: [
+            (ScrapIron, 10),
+        ],
+    ),
+    (
+        item_type: BearCannon,
+        name: "爆熊撼地炮",
+        description: "由熊掌、弹簧、电池和铜线组装的一次性爆炸武器，造成20点伤害",
+        effect: Damage(20),
+        icon: "💥",
+        materials: [
+            (BearPaw, 5),
+            (HighStrengthSpring, 10),
+            (DryBattery, 20),
+            (CopperWire, 25),
+        ],
+    ),
+]

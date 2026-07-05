@@ -25,6 +25,18 @@ pub struct BattleLogText;
 pub struct FireButton;
 
 #[derive(Component)]
+pub struct SecFireButton;
+
+#[derive(Component)]
+pub struct ItemButton;
+
+#[derive(Component)]
+pub struct ItemUseButton(pub ItemType);
+
+#[derive(Component)]
+pub struct ItemPanel;
+
+#[derive(Component)]
 pub struct RetreatButton;
 
 #[derive(Component)]
@@ -281,8 +293,8 @@ fn create_button(font: Handle<Font>,
                     (
                         Button,
                         Node {
-                            width: px(80),
-                            height: px(50),
+                            width: px(72),
+                            height: px(44),
                             border: UiRect::all(px(3)),
                             justify_content: JustifyContent::Center,
                             align_items: AlignItems::Center,
@@ -293,9 +305,51 @@ fn create_button(font: Handle<Font>,
                         BackgroundColor(Color::srgb(0.5, 0.08, 0.08)),
                         FireButton,
                         children![(
-                            Text::new("开火"),
-                            TextFont { font: font.clone(), font_size: 16.0, ..default() },
+                            Text::new("主炮"),
+                            TextFont { font: font.clone(), font_size: 15.0, ..default() },
                             TextColor(Color::srgb(1.0, 0.8, 0.8)),
+                        )],
+                    ),
+                    // 副炮按钮
+                    (
+                        Button,
+                        Node {
+                            width: px(72),
+                            height: px(44),
+                            border: UiRect::all(px(3)),
+                            justify_content: JustifyContent::Center,
+                            align_items: AlignItems::Center,
+                            ..default()
+                        },
+                        BorderColor::all(Color::srgb(0.3, 0.6, 0.9)),
+                        BorderRadius::all(px(8.0)),
+                        BackgroundColor(Color::srgb(0.08, 0.25, 0.4)),
+                        SecFireButton,
+                        children![(
+                            Text::new("副炮"),
+                            TextFont { font: font.clone(), font_size: 15.0, ..default() },
+                            TextColor(Color::srgb(0.7, 0.9, 1.0)),
+                        )],
+                    ),
+                    // 道具按钮
+                    (
+                        Button,
+                        Node {
+                            width: px(72),
+                            height: px(44),
+                            border: UiRect::all(px(3)),
+                            justify_content: JustifyContent::Center,
+                            align_items: AlignItems::Center,
+                            ..default()
+                        },
+                        BorderColor::all(Color::srgb(0.1, 0.8, 0.3)),
+                        BorderRadius::all(px(8.0)),
+                        BackgroundColor(Color::srgb(0.05, 0.35, 0.12)),
+                        ItemButton,
+                        children![(
+                            Text::new("道具"),
+                            TextFont { font: font.clone(), font_size: 15.0, ..default() },
+                            TextColor(Color::srgb(0.3, 1.0, 0.4)),
                         )],
                     ),
                     // 撤退按钮
@@ -775,6 +829,304 @@ impl BattleLog {
         self.messages.push(msg);
         if self.messages.len() > 20 {
             self.messages.remove(0);
+        }
+    }
+}
+
+// ============ 副炮攻击按钮 ============
+
+pub fn check_secfire_button(
+    mut player_query: Query<(&mut Player, &SecGun)>,
+    mut enemy_query: Query<&mut Enemy>,
+    mut log: ResMut<BattleLog>,
+    mut battle_over: ResMut<BattleOver>,
+    player_level: Res<PlayerLevel>,
+    mut secfire_query: Query<
+        (&Interaction, &mut BackgroundColor),
+        (Changed<Interaction>, With<SecFireButton>),
+    >,
+) {
+    if let Ok((inter, mut bg)) = secfire_query.single_mut() {
+        match inter {
+            Interaction::Pressed => {
+                bg.0 = Color::srgb(0.2, 0.4, 0.6);
+
+                if battle_over.over {
+                    log.add("战斗已经结束了！".to_string());
+                    return;
+                }
+
+                let (mut player, secgun) = player_query.single_mut().unwrap();
+                let mut enemy = enemy_query.single_mut().unwrap();
+
+                if !secgun.available || secgun.damage == 0 {
+                    log.add("副炮未安装或已损坏！".to_string());
+                    return;
+                }
+
+                let base_damage = secgun.damage;
+                let multiplier = player_level.attack_multiplier();
+                let damage = (base_damage as f32 * multiplier).round() as u32;
+                enemy.hp -= damage as i32;
+                log.add(format!(
+                    "副炮开火！【{}】造成 {} 点伤害！(Lv.{} x{:.0}%加成)",
+                    secgun.name, damage, player_level.level, (multiplier - 1.0) * 100.0
+                ));
+
+                if enemy.hp <= 0 {
+                    enemy.hp = 0;
+                    battle_over.over = true;
+                    battle_over.player_won = true;
+                    log.add(format!("【{}】被击败了！胜利！", enemy.name));
+                    return;
+                }
+
+                let enemy_dmg = enemy.damage;
+                player.health -= enemy_dmg;
+                log.add(format!("【{}】反击，造成 {} 点伤害！", enemy.name, enemy_dmg));
+
+                if player.health <= 0 {
+                    player.health = 0;
+                    battle_over.over = true;
+                    battle_over.player_won = false;
+                    log.add("你的战车被摧毁了……".to_string());
+                }
+            }
+            Interaction::Hovered => {
+                bg.0 = Color::srgb(0.2, 0.5, 0.7);
+            }
+            Interaction::None => {
+                bg.0 = Color::srgb(0.08, 0.25, 0.4);
+            }
+        }
+    }
+}
+
+// ============ 道具按钮（打开道具面板） ============
+
+pub fn check_item_button(
+    mut commands: Commands,
+    backpack: Option<Res<Backpack>>,
+    item_db: Res<ItemDataBase>,
+    mut log: ResMut<BattleLog>,
+    mut item_button_query: Query<
+        (&Interaction, &mut BackgroundColor),
+        (Changed<Interaction>, With<ItemButton>),
+    >,
+    existing_panel: Query<Entity, With<ItemPanel>>,
+    root_query: Query<Entity, With<WarBg>>,
+    asset_server: Res<AssetServer>,
+) {
+    if let Ok((inter, mut bg)) = item_button_query.single_mut() {
+        match inter {
+            Interaction::Pressed => {
+                bg.0 = Color::srgb(0.1, 0.5, 0.2);
+
+                // 如果已有道具面板则关闭
+                if let Ok(panel) = existing_panel.single() {
+                    commands.entity(panel).despawn();
+                    return;
+                }
+
+                let font: Handle<Font> = asset_server.load("fonts/STKAITI.TTF");
+                let empty_vec = Vec::new();
+                let bp_items = backpack.as_ref().map(|b| &b.items).unwrap_or(&empty_vec);
+                // 过滤出可用道具（SmallArmorKit, BearCannon 等）
+                let useable_items: Vec<(ItemType, u32)> = bp_items
+                    .iter()
+                    .filter(|s| {
+                        matches!(s.item_type, ItemType::SmallArmorKit | ItemType::BearCannon)
+                    })
+                    .map(|s| (s.item_type, s.quantity))
+                    .collect();
+
+                if useable_items.is_empty() {
+                    log.add("背包中没有可用道具！".to_string());
+                    return;
+                }
+
+                // 作为WarRoot子节点创建道具面板
+                if let Ok(root) = root_query.single() {
+                    commands.entity(root).with_children(|parent| {
+                        parent.spawn((
+                            ItemPanel,
+                            DespawnOnExit(Appstatus::War),
+                            Name::new("ItemPanel"),
+                            Node {
+                                width: percent(60),
+                                height: percent(30),
+                                position_type: PositionType::Absolute,
+                                top: px(80.0),
+                                left: px(80.0),
+                                flex_direction: FlexDirection::Column,
+                                align_items: AlignItems::Center,
+                                justify_content: JustifyContent::FlexStart,
+                                padding: UiRect::all(px(8.0)),
+                                row_gap: px(6.0),
+                                border: UiRect::all(px(2)),
+                                ..default()
+                            },
+                            BorderColor::all(Color::srgb(0.1, 0.8, 0.3)),
+                            BorderRadius::all(px(8.0)),
+                            BackgroundColor(Color::srgba(0.05, 0.05, 0.15, 0.95)),
+                            children![
+                                (
+                                    Node {
+                                        width: percent(100),
+                                        height: percent(20),
+                                        justify_content: JustifyContent::Center,
+                                        align_items: AlignItems::Center,
+                                        ..default()
+                                    },
+                                    children![(
+                                        Text::new("📦 选择道具"),
+                                        TextFont {
+                                            font: font.clone(),
+                                            font_size: 22.0,
+                                            ..default()
+                                        },
+                                        TextColor(Color::srgb(0.3, 1.0, 0.4)),
+                                    )],
+                                ),
+                            ],
+                        ));
+                        // 每个道具生成一个按钮
+                        for (item_type, qty) in &useable_items {
+                            let config = item_db.find_by_type(*item_type).unwrap();
+                            parent.spawn((
+                                Button,
+                                ItemUseButton(*item_type),
+                                Node {
+                                    width: percent(80),
+                                    height: px(36),
+                                    border: UiRect::all(px(1)),
+                                    justify_content: JustifyContent::Center,
+                                    align_items: AlignItems::Center,
+                                    ..default()
+                                },
+                                BorderColor::all(Color::srgb(0.3, 0.8, 0.3)),
+                                BorderRadius::all(px(6.0)),
+                                BackgroundColor(Color::srgb(0.08, 0.2, 0.08)),
+                                children![(
+                                    Text::new(format!("{} {} ×{}", config.icon, config.name, qty)),
+                                    TextFont { font: font.clone(), font_size: 18.0, ..default() },
+                                    TextColor(Color::srgb(0.3, 1.0, 0.4)),
+                                )],
+                            ));
+                        }
+                    });
+                }
+            }
+            Interaction::Hovered => {
+                bg.0 = Color::srgb(0.1, 0.6, 0.3);
+            }
+            Interaction::None => {
+                bg.0 = Color::srgb(0.05, 0.35, 0.12);
+            }
+        }
+    }
+}
+
+// ============ 道具面板里的道具使用按钮 ============
+
+pub fn check_use_item_buttons(
+    mut commands: Commands,
+    mut player_query: Query<(&mut Player, &Cannon)>,
+    mut enemy_query: Query<&mut Enemy>,
+    mut backpack: ResMut<Backpack>,
+    item_db: Res<ItemDataBase>,
+    mut log: ResMut<BattleLog>,
+    mut battle_over: ResMut<BattleOver>,
+    mut interaction_query: Query<
+        (&Interaction, &ItemUseButton, &mut BackgroundColor),
+        (Changed<Interaction>, With<ItemUseButton>),
+    >,
+) {
+    for (inter, item_btn, mut bg) in interaction_query.iter_mut() {
+        if *inter == Interaction::Pressed {
+            bg.0 = Color::srgb(0.2, 0.2, 0.2);
+
+            if battle_over.over {
+                log.add("战斗已经结束了！".to_string());
+                return;
+            }
+
+            let item_type = item_btn.0;
+            let config = match item_db.find_by_type(item_type) {
+                Some(c) => c.clone(),
+                None => {
+                    log.add("未知的道具！".to_string());
+                    return;
+                }
+            };
+
+            // 检查背包中是否有此道具
+            let has_item = backpack.items.iter()
+                .any(|s| s.item_type == item_type && s.quantity > 0);
+            if !has_item {
+                log.add(format!("没有【{}】了！", config.name));
+                return;
+            }
+
+            // 消耗道具
+            if let Err(e) = backpack.remove(item_type, 1) {
+                log.add(format!("使用失败：{}", e));
+                return;
+            }
+
+            // 执行效果
+            match config.effect {
+                ItemEffect::Heal(amount) => {
+                    let (mut player, _) = player_query.single_mut().unwrap();
+                    let old_hp = player.health;
+                    player.health = (player.health + amount).min(player.max_health);
+                    let healed = player.health - old_hp;
+                    log.add(format!(
+                        "🛡️ 使用【{}】！恢复 {} 点装甲片（{}/{})",
+                        config.name, healed, player.health, player.max_health
+                    ));
+                }
+                ItemEffect::Damage(amount) => {
+                    let mut enemy = enemy_query.single_mut().unwrap();
+                    let damage = amount;
+                    enemy.hp -= damage;
+                    log.add(format!(
+                        "💥 使用【{}】！造成 {} 点伤害！",
+                        config.name, damage
+                    ));
+
+                    if enemy.hp <= 0 {
+                        enemy.hp = 0;
+                        battle_over.over = true;
+                        battle_over.player_won = true;
+                        log.add(format!("【{}】被击败了！胜利！", enemy.name));
+                        return;
+                    }
+
+                    // 敌人反击
+                    let (mut player, _) = player_query.single_mut().unwrap();
+                    let enemy_dmg = enemy.damage;
+                    player.health -= enemy_dmg;
+                    log.add(format!("【{}】反击，造成 {} 点伤害！", enemy.name, enemy_dmg));
+
+                    if player.health <= 0 {
+                        player.health = 0;
+                        battle_over.over = true;
+                        battle_over.player_won = false;
+                        log.add("你的战车被摧毁了……".to_string());
+                    }
+                }
+            }
+            // 关闭道具面板
+            commands.queue(|world: &mut World| {
+                let entities: Vec<Entity> = world
+                    .query_filtered::<Entity, With<ItemPanel>>()
+                    .iter(world)
+                    .collect();
+                for e in entities {
+                    world.despawn(e);
+                }
+            });
         }
     }
 }

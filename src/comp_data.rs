@@ -127,6 +127,7 @@ pub enum Appstatus {
     War,
     Upgrade,
     Forge,
+    Craft,
 }
 
 
@@ -391,6 +392,8 @@ pub enum ItemType {
     HighStrengthSpring,   // 高强度弹簧
     BearPaw,              // 熊掌
     V8EngineBlueprint,    // V8引擎图纸
+    SmallArmorKit,        // 小型装甲包（道具）
+    BearCannon,           // 爆熊撼地炮（道具）
 }
 
 impl ItemType {
@@ -403,6 +406,8 @@ impl ItemType {
             ItemType::HighStrengthSpring => "高强度弹簧",
             ItemType::BearPaw => "熊掌",
             ItemType::V8EngineBlueprint => "V8引擎图纸",
+            ItemType::SmallArmorKit => "小型装甲包",
+            ItemType::BearCannon => "爆熊撼地炮",
         }
     }
 
@@ -416,20 +421,23 @@ impl ItemType {
             ItemType::HighStrengthSpring => "🌀",
             ItemType::BearPaw => "🐾",
             ItemType::V8EngineBlueprint => "图纸",
+            ItemType::SmallArmorKit => "🛡️",
+            ItemType::BearCannon => "💥",
         }
     }
 
-    /// 物品品质色 (0-金色, 1-蓝, 2-绿, 3-白)
+    /// 物品品质色
     pub fn rarity_color(&self) -> Color {
         match self {
             ItemType::V8EngineBlueprint => Color::srgb(1.0, 0.84, 0.0),  // 金色
             ItemType::BearPaw => Color::srgb(1.0, 0.84, 0.0),          // 金色
+            ItemType::SmallArmorKit => Color::srgb(0.3, 0.9, 0.4),     // 绿色
+            ItemType::BearCannon => Color::srgb(0.9, 0.3, 0.3),        // 红色
             ItemType::HighStrengthSpring => Color::srgb(0.3, 0.6, 1.0), // 蓝色
             ItemType::DryBattery => Color::srgb(0.3, 0.9, 0.4),         // 绿色
             ItemType::CopperWire => Color::srgb(0.4, 0.8, 0.8),         // 青色
             ItemType::Leather => Color::srgb(0.8, 0.6, 0.4),            // 棕色
             ItemType::ScrapIron => Color::srgb(0.7, 0.7, 0.7),          // 灰色
-            
         }
     }
 }
@@ -686,3 +694,42 @@ pub fn has_item_in_storage(item_type: ItemType, backpack: &Backpack, warehouse: 
 
 #[derive(Resource)]
 pub struct SelectedForgeRecipe(pub usize);
+
+// ============ 道具系统 ============
+
+/// 道具效果：治疗或伤害
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum ItemEffect {
+    Heal(i32),
+    Damage(i32),
+}
+
+/// 道具配置（从 Items.ron 加载）
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ItemConfig {
+    pub item_type: ItemType,
+    pub name: String,
+    pub description: String,
+    pub effect: ItemEffect,
+    pub icon: String,
+    pub materials: Vec<(ItemType, u32)>,
+}
+
+/// 道具数据库
+#[derive(Resource)]
+pub struct ItemDataBase {
+    pub items: Vec<ItemConfig>,
+}
+
+impl ItemDataBase {
+    pub fn load() -> Result<ItemDataBase> {
+        let config_path = "configs/Items.ron";
+        let config_str = std::fs::read_to_string(config_path).unwrap();
+        let items: Vec<ItemConfig> = ron::from_str(&config_str).unwrap();
+        Ok(Self { items })
+    }
+
+    pub fn find_by_type(&self, item_type: ItemType) -> Option<&ItemConfig> {
+        self.items.iter().find(|c| c.item_type == item_type)
+    }
+}
