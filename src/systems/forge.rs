@@ -204,8 +204,10 @@ pub fn update_forge_display(
     backpack: Option<Res<Backpack>>,
     warehouse: Option<Res<Warehouse>>,
     player: Query<(&Player, &Engine)>,
-    mut detail_text: Query<&mut Text, With<ForgeDetailText>>,
-    mut result_text: Query<&mut Text, With<ForgeResultText>>,
+    mut text_params: ParamSet<(
+        Query<&mut Text, With<ForgeDetailText>>,
+        Query<&mut Text, With<ForgeResultText>>,
+    )>,
 ) {
     let idx = selected.0.min(forge_db.recipes.len().saturating_sub(1));
     let recipe = &forge_db.recipes[idx];
@@ -261,7 +263,7 @@ pub fn update_forge_display(
         }
     }
 
-    if let Ok(mut t) = detail_text.single_mut() {
+    if let Ok(mut t) = text_params.p0().single_mut() {
         t.0 = detail;
     }
 
@@ -275,7 +277,7 @@ pub fn update_forge_display(
     } else {
         "✅ 所有条件满足，可以锻造！".to_string()
     };
-    if let Ok(mut t) = result_text.single_mut() {
+    if let Ok(mut t) = text_params.p1().single_mut() {
         t.0 = result;
     }
 }
