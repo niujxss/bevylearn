@@ -31,6 +31,7 @@ pub enum SecgunType {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum EngineType {
     EngineLevel1,
+    EngineLevel2,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -388,6 +389,7 @@ pub enum ItemType {
     DryBattery,           // 干电池
     HighStrengthSpring,   // 高强度弹簧
     BearPaw,              // 熊掌
+    V8EngineBlueprint,    // V8引擎图纸
 }
 
 impl ItemType {
@@ -399,6 +401,7 @@ impl ItemType {
             ItemType::DryBattery => "干电池",
             ItemType::HighStrengthSpring => "高强度弹簧",
             ItemType::BearPaw => "熊掌",
+            ItemType::V8EngineBlueprint => "V8引擎图纸",
         }
     }
 
@@ -411,18 +414,21 @@ impl ItemType {
             ItemType::DryBattery => "🔋",
             ItemType::HighStrengthSpring => "🌀",
             ItemType::BearPaw => "🐾",
+            ItemType::V8EngineBlueprint => "图纸",
         }
     }
 
     /// 物品品质色 (0-金色, 1-蓝, 2-绿, 3-白)
     pub fn rarity_color(&self) -> Color {
         match self {
+            ItemType::V8EngineBlueprint => Color::srgb(1.0, 0.84, 0.0),  // 金色
             ItemType::BearPaw => Color::srgb(1.0, 0.84, 0.0),          // 金色
             ItemType::HighStrengthSpring => Color::srgb(0.3, 0.6, 1.0), // 蓝色
             ItemType::DryBattery => Color::srgb(0.3, 0.9, 0.4),         // 绿色
             ItemType::CopperWire => Color::srgb(0.4, 0.8, 0.8),         // 青色
             ItemType::Leather => Color::srgb(0.8, 0.6, 0.4),            // 棕色
             ItemType::ScrapIron => Color::srgb(0.7, 0.7, 0.7),          // 灰色
+            
         }
     }
 }

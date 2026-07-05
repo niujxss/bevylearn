@@ -244,7 +244,7 @@ pub fn update_upgrade_display(
                 .unwrap_or(0);
             let total = bp_qty + wh_qty;
             let mark = if total >= *need_qty { "✅" } else { "❌" };
-            mat_lines += &format!("  {} {}：背包{} + 仓库{} / 需要{}\n", mark, item.name(), bp_qty, wh_qty, need_qty);
+            mat_lines += &format!("  {} {}：背包{} + 仓库{} , 共{} / 需要{}\n", mark, item.name(), bp_qty, wh_qty, (bp_qty + wh_qty),need_qty);
             if total < *need_qty {
                 all_mat_ok = false;
             }
